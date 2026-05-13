@@ -101,8 +101,14 @@ export function GarmentDateRangePicker({
             */}
             <style>{`
                 @media (max-width: 767px) {
-                    .rdp-months { flex-direction: column; }
+                    .rdp-months { flex-direction: column; align-items: center; }
                     .rdp-months .rdp-month:nth-child(2) { display: none; }
+                    .rdp-day_button { width: 38px; height: 38px; }
+                }
+                .rdp-root {
+                    width: 100%;
+                    display: flex;
+                    justify-content: center;
                 }
                 .rdp-day_selected:not(.rdp-day_range_middle) .rdp-day_button {
                     background-color: hsl(var(--primary));

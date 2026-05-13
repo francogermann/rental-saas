@@ -28,7 +28,7 @@ export default async function GarmentDetailPage({ params }: { params: { garmentI
     <div className="container max-w-screen-xl mx-auto px-4 py-12">
       <div className="grid md:grid-cols-2 gap-12 items-start">
         {/* Gallery */}
-        <div className="flex flex-col gap-4 sticky top-24">
+        <div className="flex flex-col gap-4 md:sticky md:top-24">
           <div className="relative aspect-[3/4] bg-muted rounded-2xl overflow-hidden border border-border/40">
             {garment.photos_urls && garment.photos_urls.length > 0 ? (
               <Image
