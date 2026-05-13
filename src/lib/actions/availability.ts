@@ -92,7 +92,7 @@ export async function searchAvailableGarments(
         return { data: null, error: 'Tienda inactiva o no encontrada.' };
     }
 
-    const { data, error } = await supabase.rpc('get_available_garments' as any, {
+    const { data, error } = await supabase.rpc('get_available_garments', {
         p_organization_id: orgData.id,
         p_pickup_date: pickupDate,
         p_return_date: returnDate,
@@ -177,7 +177,7 @@ export async function createReservation(
         p_customer_id: customerId,
         p_pickup_date: pickupDate,
         p_return_date: returnDate,
-        p_event_date: (eventDate ?? undefined) as any,
+        p_event_date: eventDate as string,
         p_rental_price: rentalPrice,
         p_deposit_amount: depositAmount,
     });

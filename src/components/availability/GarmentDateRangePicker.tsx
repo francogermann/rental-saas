@@ -34,7 +34,7 @@ export function GarmentDateRangePicker({
         })),
     [blockedRanges]);
 
-    const disabledDays = useMemo<any[]>(() => [
+    const disabledDays = useMemo(() => [
         { before: today },
         ...parsedBlocks.map(b => ({ from: b.from, to: b.to })),
     ], [today, parsedBlocks]);
