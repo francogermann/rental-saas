@@ -21,10 +21,10 @@ export default async function CatalogPage({ searchParams }: { searchParams: { [k
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,hsl(315_100%_60%/.12),transparent_50%)]" />
         <div className="relative z-10 max-w-3xl mx-auto">
           <h1 className="font-display text-4xl md:text-6xl font-bold tracking-tight mb-6 bg-gradient-to-r from-fuchsia-400 via-pink-300 to-purple-400 bg-clip-text text-transparent">
-            Colección Exclusiva
+            Nuestra Colección
           </h1>
           <p className="text-lg text-muted-foreground leading-relaxed max-w-xl mx-auto">
-            Prendas de diseñador seleccionadas para tus eventos más importantes. Reservá online y viví la experiencia VIP.
+            Vestidos de fiesta, graduación, casamiento y gala. Encontrá el tuyo y reservalo sin agenda previa.
           </p>
         </div>
       </section>

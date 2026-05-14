@@ -65,7 +65,7 @@ export default async function GarmentDetailPage({ params }: { params: { garmentI
                 {garment.name}
               </h1>
               <p className="text-lg text-muted-foreground leading-relaxed">
-                {garment.description || "Prenda exclusiva de Maison. Detalles excepcionales elaborados a medida para tus eventos de gala."}
+                {garment.description || "Vestido exclusivo de Carpe Diem. Elegí tus fechas y reservalo sin agenda previa."}
               </p>
             </div>
 

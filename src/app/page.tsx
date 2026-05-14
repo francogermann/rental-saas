@@ -26,16 +26,16 @@ export default function HomePage() {
         <div className="relative z-10 container mx-auto max-w-7xl px-6 py-24">
           <div className="max-w-2xl">
             <p className="text-fuchsia-400 font-medium uppercase tracking-[0.3em] text-sm mb-4">
-              ✦ Vestí tu noche
+              ✦ #TuMejorVersion
             </p>
             <h1 className="font-display text-5xl md:text-7xl font-bold leading-[1.05] mb-6">
-              El alquiler de vestidos,{' '}
+              Alquilá el vestido de tus{' '}
               <span className="bg-gradient-to-r from-fuchsia-400 via-pink-300 to-purple-400 bg-clip-text text-transparent italic">
-                reinventado.
+                sueños.
               </span>
             </h1>
             <p className="text-lg md:text-xl text-white/70 leading-relaxed max-w-lg mb-10">
-              La plataforma más completa, linda y fácil para alquilar el vestido perfecto para cada fiesta.
+              La plataforma más completa para encontrar el vestido perfecto para cada fiesta. Sin agenda previa.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link
@@ -53,12 +53,12 @@ export default function HomePage() {
             </div>
 
             {/* Trust badges */}
-            <div className="flex flex-wrap gap-6 mt-14 pt-8 border-t border-white/10">
+            <div className="flex flex-wrap gap-8 mt-14 pt-8 border-t border-white/10">
               {[
-                { num: '+5000', label: 'Vestidos' },
-                { num: 'Premium', label: 'Calidad' },
-                { num: '100%', label: 'Online' },
-                { num: 'Seguro', label: 'Y confiable' },
+                { num: '+1000', label: 'Vestidos' },
+                { num: '46K+', label: 'Seguidoras' },
+                { num: 'XS–XXL', label: 'Talles' },
+                { num: '2', label: 'Locales' },
               ].map((b) => (
                 <div key={b.label} className="text-center">
                   <p className="text-xl font-bold bg-gradient-to-r from-fuchsia-400 to-purple-400 bg-clip-text text-transparent">{b.num}</p>
@@ -68,11 +68,6 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-
-        {/* Sparkle particles (decorative) */}
-        <div className="absolute top-20 right-20 w-1 h-1 bg-fuchsia-400 rounded-full animate-pulse" />
-        <div className="absolute top-40 right-40 w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse delay-300" />
-        <div className="absolute bottom-40 right-60 w-1 h-1 bg-pink-300 rounded-full animate-pulse delay-700" />
       </section>
 
 
@@ -90,10 +85,10 @@ export default function HomePage() {
               </h2>
               <div className="space-y-6">
                 {[
-                  { icon: '✦', title: 'Catálogo deslumbrante', desc: 'Miles de vestidos de fiesta, graduación, casamiento y eventos.' },
-                  { icon: '🔍', title: 'Búsqueda inteligente', desc: 'Filtrá por talla, color, estilo, evento y mucho más.' },
-                  { icon: '📅', title: 'Reservas 100% online', desc: 'Elegí tus fechas, probáte, reservá. Así de fácil.' },
-                  { icon: '📦', title: 'Envíos y devoluciones', desc: 'Envíos rápidos y devoluciones simples y sin estrés.' },
+                  { icon: '✦', title: 'Catálogo deslumbrante', desc: 'Vestidos de fiesta, graduación, casamiento y eventos de gala.' },
+                  { icon: '🔍', title: 'Búsqueda inteligente', desc: 'Filtrá por talla, color, estilo, evento y disponibilidad.' },
+                  { icon: '📅', title: 'Reservas 100% online', desc: 'Elegí tus fechas, reservá y listo. Sin agenda previa.' },
+                  { icon: '📍', title: 'Dos locales a tu servicio', desc: 'Montevideo (Micenas Mall) y Colonia (Av Artigas 316).' },
                 ].map((f) => (
                   <div key={f.title} className="flex gap-4 group">
                     <div className="w-12 h-12 shrink-0 rounded-2xl bg-fuchsia-500/10 border border-fuchsia-500/20 flex items-center justify-center text-lg group-hover:bg-fuchsia-500/20 group-hover:shadow-glow transition-all duration-300">
@@ -133,10 +128,10 @@ export default function HomePage() {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
-              { step: '01', icon: '👗', title: 'Elegí', desc: 'Explorá nuestro catálogo y encontrá tu vestido ideal.' },
-              { step: '02', icon: '📅', title: 'Reservá', desc: 'Seleccioná tus fechas y realizá tu reserva online.' },
-              { step: '03', icon: '📍', title: 'Recibí', desc: 'Te lo acercamos a donde lo necesites, sin complicaciones.' },
-              { step: '04', icon: '🎉', title: 'Disfrutá', desc: 'Lucí tu vestido increíble y devolvelo fácil.' },
+              { step: '01', icon: '👗', title: 'Elegí', desc: 'Explorá nuestro catálogo online y elegí hasta 4 vestidos.' },
+              { step: '02', icon: '📅', title: 'Reservá', desc: 'Seleccioná tus fechas y reservá sin agenda previa.' },
+              { step: '03', icon: '✨', title: 'Probate', desc: 'Vení al local, probate los vestidos y elegí tu favorito.' },
+              { step: '04', icon: '🎉', title: 'Brillá', desc: 'Lucí espectacular en tu evento y devolvelo fácil.' },
             ].map((s) => (
               <div key={s.step} className="group flex flex-col items-center text-center">
                 <div className="w-20 h-20 rounded-3xl bg-white/[0.03] backdrop-blur-xl border border-white/10 flex items-center justify-center text-3xl mb-5 group-hover:border-fuchsia-500/30 group-hover:shadow-glow transition-all duration-500">
@@ -159,16 +154,16 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_70%,hsl(285_100%_68%/.06),transparent_50%)]" />
         <div className="container mx-auto max-w-7xl relative z-10">
           <div className="text-center mb-16">
-            <p className="text-fuchsia-400 font-medium uppercase tracking-widest text-sm mb-3">La diferencia</p>
+            <p className="text-fuchsia-400 font-medium uppercase tracking-widest text-sm mb-3">La experiencia Carpe Diem</p>
             <h2 className="font-display text-3xl md:text-5xl font-bold tracking-tight">¿Por qué elegirnos?</h2>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { icon: '💎', title: 'Calidad Premium', desc: 'Vestidos de diseñador y marcas exclusivas seleccionadas.' },
-              { icon: '💰', title: 'Precios Accesibles', desc: 'Alquilá el vestido de tus sueños por menos.' },
-              { icon: '🛡️', title: 'Confianza Total', desc: 'Procesos seguros y soporte siempre.' },
-              { icon: '💖', title: 'Hecho con Amor', desc: 'Pensado para que vivas tu mejor experiencia.' },
+              { icon: '💎', title: 'Calidad Premium', desc: 'Vestidos de diseñador, importados y exclusivos.' },
+              { icon: '👗', title: 'Talles XS a XXL', desc: 'Inclusivas siempre. Vestidos para todos los cuerpos.' },
+              { icon: '🛡️', title: 'Sin agenda previa', desc: 'Vení cuando quieras, te atendemos sin turno.' },
+              { icon: '💖', title: '#TuMejorVersion', desc: 'Queremos que te sientas espectacular esa noche.' },
             ].map((v) => (
               <div key={v.title} className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-3xl p-8 text-center hover:border-fuchsia-500/20 hover:shadow-glow transition-all duration-500 group">
                 <div className="w-16 h-16 mx-auto rounded-2xl bg-fuchsia-500/10 border border-fuchsia-500/20 flex items-center justify-center text-2xl mb-5 group-hover:scale-110 transition-transform duration-300">
@@ -195,9 +190,9 @@ export default function HomePage() {
 
           <div className="grid sm:grid-cols-3 gap-8">
             {[
-              { name: 'Martí R.', quote: '"El vestido llegó perfecto y me hizo sentir única. ¡Super recomendado!"' },
-              { name: 'Lufi G.', quote: '"Increíble la calidad y la atención. Super recomendadas."' },
-              { name: 'Vale T.', quote: '"La mejor experiencia de alquiler que tuve. Volveré siempre."' },
+              { name: 'Martina R.', quote: '"Me encantó la atención y la variedad. El vestido me quedó perfecto. ¡Volveré seguro!"' },
+              { name: 'Lucía G.', quote: '"Fui sin turno y salí con un vestido impresionante. La experiencia fue increíble de principio a fin."' },
+              { name: 'Valentina T.', quote: '"La mejor experiencia de alquiler que tuve. Recomiendo Carpe Diem a todas mis amigas."' },
             ].map((t) => (
               <div key={t.name} className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-3xl p-8 hover:border-fuchsia-500/20 transition-all duration-500">
                 <div className="flex items-center gap-3 mb-4">
@@ -222,10 +217,10 @@ export default function HomePage() {
         <div className="container mx-auto max-w-5xl">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
-              { value: '+5000', label: 'Vestidos', icon: '👗' },
-              { value: '+10K', label: 'Clientas felices', icon: '💖' },
+              { value: '+1000', label: 'Vestidos', icon: '👗' },
+              { value: '46K+', label: 'Seguidoras', icon: '💖' },
               { value: '4.9/5', label: 'Calificación', icon: '⭐' },
-              { value: '98%', label: 'Recomendadas', icon: '🔥' },
+              { value: '98%', label: 'Recomiendan', icon: '🔥' },
             ].map((s) => (
               <div key={s.label} className="text-center">
                 <p className="text-sm mb-1">{s.icon}</p>
@@ -233,6 +228,32 @@ export default function HomePage() {
                   {s.value}
                 </p>
                 <p className="text-sm text-muted-foreground uppercase tracking-wider mt-1">{s.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+
+      {/* ═══════════════════════════════════════════════════════
+          LOCATIONS
+      ═══════════════════════════════════════════════════════ */}
+      <section className="py-24 px-6">
+        <div className="container mx-auto max-w-7xl">
+          <div className="text-center mb-16">
+            <p className="text-fuchsia-400 font-medium uppercase tracking-widest text-sm mb-3">Visitanos</p>
+            <h2 className="font-display text-3xl md:text-5xl font-bold tracking-tight">Nuestros Locales</h2>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-8">
+            {[
+              { city: 'Montevideo', address: 'Av Brasil 3072, Local 9', detail: 'Micenas Mall', icon: '🏙️' },
+              { city: 'Colonia', address: 'Av Artigas 316', detail: 'Centro', icon: '🌊' },
+            ].map((loc) => (
+              <div key={loc.city} className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-3xl p-8 text-center hover:border-fuchsia-500/20 hover:shadow-glow transition-all duration-500">
+                <span className="text-4xl mb-4 block">{loc.icon}</span>
+                <h3 className="font-display text-2xl font-bold mb-2">{loc.city}</h3>
+                <p className="text-muted-foreground">{loc.address}</p>
+                <p className="text-muted-foreground text-sm">{loc.detail}</p>
               </div>
             ))}
           </div>
@@ -253,14 +274,24 @@ export default function HomePage() {
             </span>
           </h2>
           <p className="text-lg text-muted-foreground mb-10 max-w-lg mx-auto">
-            Tu próximo vestido te está esperando. Explorá nuestra colección y reservá el tuyo ahora.
+            Tu próximo vestido te está esperando. Explorá nuestra colección y reservá el tuyo sin agenda previa.
           </p>
-          <Link
-            href="/catalog"
-            className="inline-flex items-center justify-center h-14 px-10 bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white font-semibold rounded-2xl shadow-glow hover:shadow-glow-lg hover:scale-[1.02] active:scale-95 transition-all duration-300 text-lg"
-          >
-            Explorá el Catálogo →
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              href="/catalog"
+              className="inline-flex items-center justify-center h-14 px-10 bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white font-semibold rounded-2xl shadow-glow hover:shadow-glow-lg hover:scale-[1.02] active:scale-95 transition-all duration-300 text-lg"
+            >
+              Explorá el Catálogo →
+            </Link>
+            <a
+              href="https://wa.me/59897014922"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center h-14 px-10 bg-white/5 hover:bg-white/10 border border-white/10 backdrop-blur-xl text-white font-semibold rounded-2xl transition-all duration-300 text-lg"
+            >
+              WhatsApp 📱
+            </a>
+          </div>
         </div>
       </section>
 
@@ -271,14 +302,20 @@ export default function HomePage() {
       <footer className="py-12 px-6 border-t border-white/10">
         <div className="container mx-auto max-w-7xl flex flex-col md:flex-row justify-between items-center gap-6">
           <div>
-            <p className="font-display text-xl font-bold bg-gradient-to-r from-fuchsia-400 to-purple-400 bg-clip-text text-transparent uppercase tracking-wider">
-              Maison
+            <p className="font-display text-xl font-bold italic">
+              CarpeDiem.
             </p>
             <p className="text-xs text-muted-foreground mt-1">Más que un alquiler, somos parte de tu historia.</p>
           </div>
-          <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} Maison Rentals. Todos los derechos reservados.
-          </p>
+          <div className="flex items-center gap-6 text-sm text-muted-foreground">
+            <a href="https://www.instagram.com/carpediemalquilerdevestidos/" target="_blank" rel="noopener noreferrer" className="hover:text-fuchsia-400 transition-colors">
+              Instagram
+            </a>
+            <a href="https://wa.me/59897014922" target="_blank" rel="noopener noreferrer" className="hover:text-fuchsia-400 transition-colors">
+              WhatsApp
+            </a>
+            <span>📞 097 014 922</span>
+          </div>
         </div>
       </footer>
     </div>
