@@ -141,22 +141,30 @@ export default function CatalogClient({ garments, error }: CatalogClientProps) {
     });
   }, [garments, selectedEvents, selectedCategories, selectedSizes, selectedColors]);
 
-  const FilterSection = ({ title, count, children }: { title: string; count: number; children: React.ReactNode }) => (
-    <details className="group border-b border-white/5 last:border-0">
-      <summary className="flex items-center justify-between cursor-pointer py-3 list-none [&::-webkit-details-marker]:hidden">
-        <span className="text-xs font-semibold uppercase tracking-widest text-fuchsia-400">{title}</span>
-        <div className="flex items-center gap-2">
-          {count > 0 && (
-            <span className="w-4 h-4 flex items-center justify-center rounded-full bg-fuchsia-500 text-white text-[9px] font-bold">{count}</span>
-          )}
-          <span className="text-muted-foreground text-xs transition-transform duration-200 group-open:rotate-180">▾</span>
-        </div>
-      </summary>
-      <div className="pb-4 pt-1">
-        {children}
+  const FilterSection = ({ title, count, children }: { title: string; count: number; children: React.ReactNode }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <div className="border-b border-white/5 last:border-0">
+        <button 
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full flex items-center justify-between cursor-pointer py-3"
+        >
+          <span className="text-xs font-semibold uppercase tracking-widest text-fuchsia-400">{title}</span>
+          <div className="flex items-center gap-2">
+            {count > 0 && (
+              <span className="w-4 h-4 flex items-center justify-center rounded-full bg-fuchsia-500 text-white text-[9px] font-bold">{count}</span>
+            )}
+            <span className={`text-muted-foreground text-xs transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>▾</span>
+          </div>
+        </button>
+        {isOpen && (
+          <div className="pb-4 pt-1">
+            {children}
+          </div>
+        )}
       </div>
-    </details>
-  );
+    );
+  };
 
   const FilterChip = ({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) => (
     <button
