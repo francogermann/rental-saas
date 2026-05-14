@@ -141,11 +141,21 @@ export default function CatalogClient({ garments, error }: CatalogClientProps) {
     });
   }, [garments, selectedEvents, selectedCategories, selectedSizes, selectedColors]);
 
-  const FilterSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
-    <div className="mb-6">
-      <h4 className="text-xs font-semibold uppercase tracking-widest text-fuchsia-400 mb-3">{title}</h4>
-      {children}
-    </div>
+  const FilterSection = ({ title, count, children }: { title: string; count: number; children: React.ReactNode }) => (
+    <details className="group border-b border-white/5 last:border-0">
+      <summary className="flex items-center justify-between cursor-pointer py-3 list-none [&::-webkit-details-marker]:hidden">
+        <span className="text-xs font-semibold uppercase tracking-widest text-fuchsia-400">{title}</span>
+        <div className="flex items-center gap-2">
+          {count > 0 && (
+            <span className="w-4 h-4 flex items-center justify-center rounded-full bg-fuchsia-500 text-white text-[9px] font-bold">{count}</span>
+          )}
+          <span className="text-muted-foreground text-xs transition-transform duration-200 group-open:rotate-180">▾</span>
+        </div>
+      </summary>
+      <div className="pb-4 pt-1">
+        {children}
+      </div>
+    </details>
   );
 
   const FilterChip = ({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) => (
@@ -163,8 +173,7 @@ export default function CatalogClient({ garments, error }: CatalogClientProps) {
 
   const filtersContent = (
     <>
-      {/* Events */}
-      <FilterSection title="Evento">
+      <FilterSection title="Evento" count={selectedEvents.length}>
         <div className="flex flex-wrap gap-2">
           {EVENT_TYPES.map(e => (
             <FilterChip key={e.value} label={e.label} active={selectedEvents.includes(e.value)} onClick={() => toggleFilter(selectedEvents, e.value, setSelectedEvents)} />
@@ -172,8 +181,7 @@ export default function CatalogClient({ garments, error }: CatalogClientProps) {
         </div>
       </FilterSection>
 
-      {/* Categories */}
-      <FilterSection title="Categoría">
+      <FilterSection title="Categoría" count={selectedCategories.length}>
         <div className="flex flex-wrap gap-2">
           {CATEGORIES.map(c => (
             <FilterChip key={c.value} label={c.label} active={selectedCategories.includes(c.value)} onClick={() => toggleFilter(selectedCategories, c.value, setSelectedCategories)} />
@@ -181,8 +189,7 @@ export default function CatalogClient({ garments, error }: CatalogClientProps) {
         </div>
       </FilterSection>
 
-      {/* Size */}
-      <FilterSection title="Talle">
+      <FilterSection title="Talle" count={selectedSizes.length}>
         <div className="flex flex-wrap gap-2">
           {SIZES.map(s => (
             <FilterChip key={s} label={s} active={selectedSizes.includes(s)} onClick={() => toggleFilter(selectedSizes, s, setSelectedSizes)} />
@@ -190,8 +197,7 @@ export default function CatalogClient({ garments, error }: CatalogClientProps) {
         </div>
       </FilterSection>
 
-      {/* Color */}
-      <FilterSection title="Color">
+      <FilterSection title="Color" count={selectedColors.length}>
         <div className="flex flex-wrap gap-2">
           {COLORS.map(c => (
             <button
