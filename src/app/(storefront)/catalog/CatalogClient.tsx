@@ -85,6 +85,7 @@ export default function CatalogClient({ garments, error, initialPickupDate, init
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState('recommended');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const toggleFilter = (arr: string[], val: string, setter: (v: string[]) => void) => {
@@ -109,8 +110,8 @@ export default function CatalogClient({ garments, error, initialPickupDate, init
 
   const filtered = useMemo(() => {
     if (!garments) return [];
-    return garments.filter(g => {
-      // Event filter: match against tags
+    const filteredArray = garments.filter(g => {
+      // Event filter: match against tags or category
       if (selectedEvents.length > 0) {
         const tags = (g.tags || []).map(t => t.toLowerCase());
         const name = g.name.toLowerCase();
@@ -159,7 +160,26 @@ export default function CatalogClient({ garments, error, initialPickupDate, init
 
       return true;
     });
-  }, [garments, selectedEvents, selectedCategories, selectedSizes, selectedColors]);
+
+    // Handle Sort
+    return filteredArray.sort((a, b) => {
+      if (sortBy === 'price_asc') {
+        return (a.rental_price || 0) - (b.rental_price || 0);
+      }
+      if (sortBy === 'price_desc') {
+        return (b.rental_price || 0) - (a.rental_price || 0);
+      }
+      if (sortBy === 'name_asc') {
+        return a.name.localeCompare(b.name);
+      }
+      if (sortBy === 'popular') {
+        // Mocking popularity for Demo using name length as a stable fake metric
+        return b.name.length - a.name.length;
+      }
+      // 'recommended' or default
+      return 0;
+    });
+  }, [garments, selectedEvents, selectedCategories, selectedSizes, selectedColors, sortBy]);
 
   const FilterSection = ({ title, count, children }: { title: string; count: number; children: React.ReactNode }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -341,6 +361,27 @@ export default function CatalogClient({ garments, error, initialPickupDate, init
 
         {/* Product Grid */}
         <div className="flex-1">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+            <p className="text-muted-foreground text-sm">
+              Mostrando <span className="text-foreground font-semibold">{filtered.length}</span> resultados
+            </p>
+            <div className="flex items-center gap-2">
+              <label htmlFor="sort" className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Ordenar por</label>
+              <select 
+                id="sort"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-sm outline-none focus:border-fuchsia-500/50 text-foreground cursor-pointer"
+              >
+                <option value="recommended" className="text-black">Destacados</option>
+                <option value="popular" className="text-black">Más Reservados</option>
+                <option value="price_asc" className="text-black">Menor Precio</option>
+                <option value="price_desc" className="text-black">Mayor Precio</option>
+                <option value="name_asc" className="text-black">Nombre (A-Z)</option>
+              </select>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
             {filtered.map((g) => (
               <Card key={g.id} className="group overflow-hidden bg-white/[0.03] backdrop-blur-xl border-white/10 rounded-3xl shadow-2xl hover:shadow-glow hover:border-fuchsia-500/30 transition-all duration-500 flex flex-col">
