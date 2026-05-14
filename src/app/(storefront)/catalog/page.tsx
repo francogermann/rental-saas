@@ -27,7 +27,7 @@ export default async function CatalogPage({ searchParams }: { searchParams: { [k
       </section>
 
       {/* Catalog with Filters */}
-      <CatalogClient garments={garments ?? []} error={error} />
+      <CatalogClient garments={garments ?? []} error={error} initialPickupDate={pickupDate} initialReturnDate={returnDate} />
     </div>
   );
 }

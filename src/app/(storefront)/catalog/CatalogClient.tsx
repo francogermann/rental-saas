@@ -5,6 +5,7 @@ import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
 // Types
 interface Garment {
@@ -65,9 +66,18 @@ const COLORS = [
 interface CatalogClientProps {
   garments: Garment[];
   error: string | null;
+  initialPickupDate: string;
+  initialReturnDate: string;
 }
 
-export default function CatalogClient({ garments, error }: CatalogClientProps) {
+export default function CatalogClient({ garments, error, initialPickupDate, initialReturnDate }: CatalogClientProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const [pickupDate, setPickupDate] = useState(initialPickupDate);
+  const [returnDate, setReturnDate] = useState(initialReturnDate);
+
   const [selectedEvents, setSelectedEvents] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
@@ -83,6 +93,13 @@ export default function CatalogClient({ garments, error }: CatalogClientProps) {
     setSelectedCategories([]);
     setSelectedSizes([]);
     setSelectedColors([]);
+  };
+
+  const applyDates = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('pickupDate', pickupDate);
+    params.set('returnDate', returnDate);
+    router.push(`${pathname}?${params.toString()}`);
   };
 
   const activeCount = selectedEvents.length + selectedCategories.length + selectedSizes.length + selectedColors.length;
@@ -181,6 +198,36 @@ export default function CatalogClient({ garments, error }: CatalogClientProps) {
 
   const filtersContent = (
     <>
+      <FilterSection title="Fechas" count={0}>
+        <div className="flex flex-col gap-3">
+          <div>
+            <label className="text-[10px] uppercase text-muted-foreground font-semibold mb-1 block">Retiro</label>
+            <input 
+              type="date" 
+              value={pickupDate}
+              onChange={(e) => setPickupDate(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-fuchsia-500/50"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] uppercase text-muted-foreground font-semibold mb-1 block">Devolución</label>
+            <input 
+              type="date" 
+              value={returnDate}
+              onChange={(e) => setReturnDate(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-fuchsia-500/50"
+            />
+          </div>
+          <button 
+            onClick={applyDates}
+            disabled={pickupDate >= returnDate}
+            className="mt-1 w-full bg-fuchsia-600 hover:bg-fuchsia-500 disabled:opacity-50 disabled:hover:bg-fuchsia-600 text-white rounded-lg py-2 text-xs font-bold uppercase tracking-wider transition-colors"
+          >
+            Aplicar Fechas
+          </button>
+        </div>
+      </FilterSection>
+
       <FilterSection title="Evento" count={selectedEvents.length}>
         <div className="flex flex-wrap gap-2">
           {EVENT_TYPES.map(e => (
