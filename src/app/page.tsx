@@ -262,6 +262,51 @@ export default function HomePage() {
 
 
       {/* ═══════════════════════════════════════════════════════
+          FAQ
+      ═══════════════════════════════════════════════════════ */}
+      <section className="py-24 px-6 relative">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,hsl(315_100%_60%/.05),transparent_50%)]" />
+        <div className="container mx-auto max-w-3xl relative z-10">
+          <div className="text-center mb-16">
+            <p className="text-fuchsia-400 font-medium uppercase tracking-widest text-sm mb-3">Preguntas Frecuentes</p>
+            <h2 className="font-display text-3xl md:text-5xl font-bold tracking-tight">FAQ</h2>
+          </div>
+
+          <div className="space-y-4">
+            {[
+              {
+                q: '¿Qué pasa si no me queda el vestido?',
+                a: 'Al venir al local sin agenda previa, podés probarte hasta 4 vestidos. Si ninguno te convence, no hay compromiso. Queremos que te sientas 100% segura con tu elección.'
+              },
+              {
+                q: '¿Puedo cambiar la fecha de mi reserva?',
+                a: 'Sí, podés modificar la fecha de tu reserva contactándonos por WhatsApp o directamente en el local, sujeto a disponibilidad del vestido para las nuevas fechas.'
+              },
+              {
+                q: '¿Qué pasa si el vestido se daña?',
+                a: 'Los accidentes pasan. Al momento de retirar el vestido se firma un acuerdo que detalla las condiciones. Daños menores habituales (como un pequeño enganche) están contemplados. Para daños mayores, se evalúa caso a caso.'
+              },
+              {
+                q: '¿Con cuánta anticipación debo reservar?',
+                a: 'Recomendamos reservar con al menos 1–2 semanas de anticipación para tener la mayor variedad disponible. Para temporada alta (fiestas de fin de año, graduaciones), idealmente con 1 mes de antelación.'
+              },
+            ].map((faq) => (
+              <details key={faq.q} className="group bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden hover:border-fuchsia-500/20 transition-all duration-300">
+                <summary className="flex items-center justify-between cursor-pointer p-6 font-semibold text-lg list-none [&::-webkit-details-marker]:hidden">
+                  <span>{faq.q}</span>
+                  <span className="text-fuchsia-400 text-2xl ml-4 shrink-0 transition-transform duration-300 group-open:rotate-45">+</span>
+                </summary>
+                <div className="px-6 pb-6 text-muted-foreground leading-relaxed">
+                  {faq.a}
+                </div>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+
+      {/* ═══════════════════════════════════════════════════════
           FINAL CTA
       ═══════════════════════════════════════════════════════ */}
       <section className="py-24 px-6 text-center relative overflow-hidden">
