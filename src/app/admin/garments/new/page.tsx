@@ -85,12 +85,18 @@ export default function NewGarmentPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">Precio de Alquiler (ARS)</label>
-              <input required name="rental_price" type="number" min="0" defaultValue="15000" className="w-full h-12 bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl px-4 outline-none transition-all text-foreground font-mono" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">Valor de Garantía/Seña (ARS)</label>
               <input required name="deposit_amount" type="number" min="0" defaultValue="5000" className="w-full h-12 bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl px-4 outline-none transition-all text-foreground font-mono" />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-muted-foreground">URLs de Fotos (Una por línea)</label>
+            <textarea 
+              name="photos_urls" 
+              rows={4} 
+              placeholder="https://ejemplo.com/foto1.jpg"
+              className="w-full bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl p-4 outline-none transition-all text-foreground resize-none font-mono text-sm" 
+            />
           </div>
 
           <button 

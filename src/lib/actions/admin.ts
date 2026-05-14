@@ -13,6 +13,8 @@ export async function createGarment(formData: FormData) {
   const category = formData.get('category') as string;
   const rental_price = parseFloat(formData.get('rental_price') as string);
   const deposit_amount = parseFloat(formData.get('deposit_amount') as string);
+  const photos_urls_raw = formData.get('photos_urls') as string;
+  const photos_urls = photos_urls_raw ? photos_urls_raw.split('\n').map(u => u.trim()).filter(Boolean) : [];
 
   // Default to maison-demo organization for MVP
   const { data: orgData } = await supabase
@@ -32,6 +34,7 @@ export async function createGarment(formData: FormData) {
     category,
     rental_price,
     deposit_amount,
+    photos_urls,
     operative_status: 'disponible',
   }).select('id').single();
 
@@ -56,6 +59,8 @@ export async function updateGarment(formData: FormData) {
   const operative_status = formData.get('operative_status') as string;
   const rental_price = parseFloat(formData.get('rental_price') as string);
   const deposit_amount = parseFloat(formData.get('deposit_amount') as string);
+  const photos_urls_raw = formData.get('photos_urls') as string;
+  const photos_urls = photos_urls_raw ? photos_urls_raw.split('\n').map(u => u.trim()).filter(Boolean) : [];
 
   const { error } = await supabase.from('garments')
     .update({
@@ -66,7 +71,8 @@ export async function updateGarment(formData: FormData) {
       category,
       rental_price,
       deposit_amount,
-      operative_status
+      operative_status,
+      photos_urls
     })
     .eq('id', id);
 

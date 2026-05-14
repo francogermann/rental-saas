@@ -90,6 +90,27 @@ export default async function EditGarmentPage({ params }: { params: { id: string
             </div>
           </div>
 
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-muted-foreground">URLs de Fotos (Una por línea)</label>
+            <textarea 
+              name="photos_urls" 
+              defaultValue={garment.photos_urls?.join('\n') || ''} 
+              rows={4} 
+              placeholder="https://ejemplo.com/foto1.jpg"
+              className="w-full bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl p-4 outline-none transition-all text-foreground resize-none font-mono text-sm" 
+            />
+            {garment.photos_urls?.length > 0 && (
+              <div className="flex gap-2 overflow-x-auto py-2">
+                {garment.photos_urls.map((url: string, i: number) => (
+                  <div key={i} className="w-16 h-20 rounded bg-white/10 shrink-0 overflow-hidden border border-white/10">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt="" className="w-full h-full object-cover" />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <button 
             type="submit" 
             className="w-full bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white rounded-xl py-4 font-bold tracking-wide shadow-glow transition-all mt-4"
