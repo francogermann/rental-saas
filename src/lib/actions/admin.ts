@@ -94,8 +94,8 @@ export async function updateReservationStatus(formData: FormData) {
     .eq('id', id);
 
   if (error) {
-    console.error('Error al actualizar estado:', error);
-    throw new Error('No se pudo actualizar el estado de la reserva.');
+    console.error('CRITICAL ERROR updating reservation status:', error);
+    throw new Error(`No se pudo actualizar el estado: ${error.message} (${error.code})`);
   }
 
   redirect('/admin/reservations');

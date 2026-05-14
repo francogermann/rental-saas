@@ -89,8 +89,8 @@ export default async function AdminReservationsPage() {
                       <Badge className={
                         res.status === 'confirmed' || res.status === 'paid' ? 'bg-emerald-500/20 text-emerald-300' :
                         res.status === 'pending' ? 'bg-amber-500/20 text-amber-300' :
-                        res.status === 'entregada' ? 'bg-indigo-500/20 text-indigo-300' :
-                        res.status === 'devuelta' ? 'bg-zinc-500/20 text-zinc-300' :
+                        res.status === 'delivered' ? 'bg-indigo-500/20 text-indigo-300' :
+                        res.status === 'returned' ? 'bg-zinc-500/20 text-zinc-300' :
                         'bg-red-500/20 text-red-300'
                       }>
                         {res.status.toUpperCase()}
@@ -101,11 +101,11 @@ export default async function AdminReservationsPage() {
                        <form action={updateReservationStatus} className="inline-flex gap-2">
                           <input type="hidden" name="id" value={res.id} />
                           {res.status === 'confirmed' || res.status === 'paid' ? (
-                            <button type="submit" name="status" value="entregada" className="text-xs font-bold uppercase tracking-widest text-white bg-fuchsia-600 hover:bg-fuchsia-500 px-3 py-1.5 rounded-lg transition-colors">
+                            <button type="submit" name="status" value="delivered" className="text-xs font-bold uppercase tracking-widest text-white bg-fuchsia-600 hover:bg-fuchsia-500 px-3 py-1.5 rounded-lg transition-colors">
                               Marcar Entregada
                             </button>
-                          ) : res.status === 'entregada' ? (
-                            <button type="submit" name="status" value="devuelta" className="text-xs font-bold uppercase tracking-widest text-white bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded-lg transition-colors">
+                          ) : res.status === 'delivered' ? (
+                            <button type="submit" name="status" value="returned" className="text-xs font-bold uppercase tracking-widest text-white bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded-lg transition-colors">
                               Registrar Devolución
                             </button>
                           ) : (
