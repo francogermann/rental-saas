@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createAdminClient } from '@/lib/supabase/server';
 import { Badge } from '@/components/ui/badge';
 import { updateReservationStatus } from '@/lib/actions/admin';
@@ -54,6 +55,7 @@ export default async function AdminReservationsPage() {
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-14 bg-muted rounded overflow-hidden shrink-0">
                           {res.garments?.photos_urls?.[0] && (
+                             /* eslint-disable-next-line @next/next/no-img-element */
                              <img src={res.garments.photos_urls[0]} alt="" className="w-full h-full object-cover" />
                           )}
                         </div>

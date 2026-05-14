@@ -67,7 +67,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const totalSubtotal = items.reduce((acc, item) => acc + (item.garment.rental_price || 0), 0);
-  const totalDeposit = items.reduce((acc, item) => Math.max(acc, item.garment.deposit_amount || 0), 0);
   // Note on deposit: usually the deposit might be sum, or just the max one if they are rented together.
   // Let's sum them for now unless business rules say otherwise. If summing:
   // const totalDeposit = items.reduce((acc, item) => acc + (item.garment.deposit_amount || 0), 0);

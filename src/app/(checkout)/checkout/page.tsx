@@ -7,7 +7,7 @@ import { processCartCheckout } from '@/lib/actions/checkout';
 import { useState } from 'react';
 
 export default function CheckoutClientPage() {
-  const { items, totalSubtotal, totalDeposit, clearCart } = useCart();
+  const { items, totalSubtotal, totalDeposit } = useCart();
   const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);

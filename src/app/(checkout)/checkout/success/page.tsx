@@ -1,4 +1,4 @@
-import Link from 'next/link';
+
 
 export default function CheckoutSuccessPage({ searchParams }: { searchParams: { ref?: string } }) {
   return (

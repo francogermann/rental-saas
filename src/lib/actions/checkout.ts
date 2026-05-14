@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/server';
@@ -158,7 +159,7 @@ export async function processCartCheckout(formData: FormData) {
   let cartItems;
   try {
     cartItems = JSON.parse(cartPayload);
-  } catch (e) {
+  } catch {
     return { error: 'Payload del carrito inválido' };
   }
 

@@ -1,6 +1,4 @@
-import Link from 'next/link';
-
-export default function CheckoutFailurePage({ searchParams }: { searchParams: { ref?: string } }) {
+export default function CheckoutFailurePage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-500">
       <div className="w-20 h-20 bg-destructive/20 text-destructive rounded-full flex items-center justify-center text-4xl mb-8 shadow-[0_0_50px_rgba(239,68,68,0.3)]">

@@ -34,11 +34,11 @@ export default async function EditGarmentPage({ params }: { params: { id: string
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">Nombre</label>
-              <input required defaultValue={garment.name} name="name" type="text" className="w-full h-12 bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl px-4 outline-none transition-all text-foreground" />
+              <input required defaultValue={garment.name || ''} name="name" type="text" className="w-full h-12 bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl px-4 outline-none transition-all text-foreground" />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">SKU / Identificador</label>
-              <input required defaultValue={garment.sku} name="sku" type="text" className="w-full h-12 bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl px-4 outline-none transition-all text-foreground" />
+              <input required defaultValue={garment.sku || ''} name="sku" type="text" className="w-full h-12 bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl px-4 outline-none transition-all text-foreground" />
             </div>
           </div>
 
@@ -60,7 +60,7 @@ export default async function EditGarmentPage({ params }: { params: { id: string
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">Talle</label>
-              <select required defaultValue={garment.size_label} name="size_label" className="w-full h-12 bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl px-4 outline-none transition-all text-foreground">
+              <select required defaultValue={garment.size_label || ''} name="size_label" className="w-full h-12 bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl px-4 outline-none transition-all text-foreground">
                 <option className="text-black" value="XS">XS</option>
                 <option className="text-black" value="S">S</option>
                 <option className="text-black" value="M">M</option>
@@ -71,7 +71,7 @@ export default async function EditGarmentPage({ params }: { params: { id: string
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">Estado Operativo</label>
-              <select required defaultValue={garment.operative_status} name="operative_status" className="w-full h-12 bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl px-4 outline-none transition-all text-foreground">
+              <select required defaultValue={garment.operative_status || ''} name="operative_status" className="w-full h-12 bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl px-4 outline-none transition-all text-foreground">
                 <option className="text-black" value="disponible">🟢 Disponible</option>
                 <option className="text-black" value="mantenimiento">🟡 Mantenimiento / Tintorería</option>
                 <option className="text-black" value="fuera_de_servicio">🔴 Fuera de Servicio</option>
@@ -82,11 +82,11 @@ export default async function EditGarmentPage({ params }: { params: { id: string
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">Precio de Alquiler (ARS)</label>
-              <input required defaultValue={garment.rental_price} name="rental_price" type="number" min="0" className="w-full h-12 bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl px-4 outline-none transition-all text-foreground font-mono" />
+              <input required defaultValue={garment.rental_price || 0} name="rental_price" type="number" min="0" className="w-full h-12 bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl px-4 outline-none transition-all text-foreground font-mono" />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">Valor de Garantía (ARS)</label>
-              <input required defaultValue={garment.deposit_amount} name="deposit_amount" type="number" min="0" className="w-full h-12 bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl px-4 outline-none transition-all text-foreground font-mono" />
+              <input required defaultValue={garment.deposit_amount || 0} name="deposit_amount" type="number" min="0" className="w-full h-12 bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl px-4 outline-none transition-all text-foreground font-mono" />
             </div>
           </div>
 

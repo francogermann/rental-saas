@@ -23,7 +23,7 @@ export async function createGarment(formData: FormData) {
 
   if (!orgData) return { error: 'Organización no encontrada' };
 
-  const { data, error } = await supabase.from('garments').insert({
+  const { error } = await supabase.from('garments').insert({
     organization_id: orgData.id,
     name,
     sku,
@@ -72,7 +72,7 @@ export async function updateGarment(formData: FormData) {
 
   if (error) {
     console.error('Error updating garment:', error);
-    return { error: 'No se pudieron actualizar los datos de la prenda.' };
+    throw new Error('No se pudieron actualizar los datos de la prenda.');
   }
 
   redirect('/admin/garments');
@@ -89,7 +89,7 @@ export async function updateReservationStatus(formData: FormData) {
 
   if (error) {
     console.error('Error al actualizar estado:', error);
-    return { error: 'No se pudo actualizar el estado de la reserva.' };
+    throw new Error('No se pudo actualizar el estado de la reserva.');
   }
 
   redirect('/admin/reservations');
