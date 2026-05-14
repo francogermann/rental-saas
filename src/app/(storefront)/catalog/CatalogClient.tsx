@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useCart } from '@/components/cart/CartContext';
 
 // Types
 interface Garment {
@@ -77,6 +78,8 @@ export default function CatalogClient({ garments, error, initialPickupDate, init
 
   const [pickupDate, setPickupDate] = useState(initialPickupDate);
   const [returnDate, setReturnDate] = useState(initialReturnDate);
+
+  const { addItem } = useCart();
 
   const [selectedEvents, setSelectedEvents] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -383,9 +386,17 @@ export default function CatalogClient({ garments, error, initialPickupDate, init
                     <span className="text-xs font-medium text-muted-foreground mb-0.5">Alquiler</span>
                     <span className="font-bold text-lg">${g.rental_price?.toLocaleString('es-AR')}</span>
                   </div>
-                  <Link href={`/catalog/${g.id}`} className="rounded-2xl bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white hover:scale-[1.02] active:scale-95 px-5 py-2 transition-all duration-300 text-sm font-semibold shadow-glow hover:shadow-glow-lg">
-                    Detalles
-                  </Link>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => addItem({ garment: g as any, pickupDate, returnDate })}
+                      className="rounded-2xl bg-white/5 border border-white/10 text-white hover:bg-white/10 active:scale-95 px-4 py-2 transition-all duration-300 text-sm font-semibold"
+                    >
+                      Añadir
+                    </button>
+                    <Link href={`/catalog/${g.id}`} className="rounded-2xl bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white hover:scale-[1.02] active:scale-95 px-4 py-2 transition-all duration-300 text-sm font-semibold shadow-glow hover:shadow-glow-lg">
+                      Detalles
+                    </Link>
+                  </div>
                 </CardFooter>
               </Card>
             ))}

@@ -10,7 +10,7 @@ export default async function GarmentDetailPage({ params }: { params: { garmentI
   const { data: garment, error } = await supabase
     .from('garments')
     .select(`
-      id, name, description, category, size_label, rental_price, deposit_amount, photos_urls, operative_status
+      id, name, sku, description, category, size_label, rental_price, deposit_amount, photos_urls, operative_status
     `)
     .eq('id', params.garmentId)
     .single();
@@ -89,9 +89,7 @@ export default async function GarmentDetailPage({ params }: { params: { garmentI
             <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
               <h3 className="font-display text-lg font-semibold mb-6 tracking-tight">Seleccionar Fechas</h3>
               <ClientDateSelector 
-                garmentId={garment.id} 
-                rentalPrice={garment.rental_price ?? 0}
-                depositAmount={garment.deposit_amount ?? 0}
+                garment={garment as any}
               />
             </div>
 

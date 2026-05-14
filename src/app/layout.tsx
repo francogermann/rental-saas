@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Playfair_Display, Manrope } from "next/font/google";
 import { cn } from "@/lib/utils";
+import { CartProvider } from "@/components/cart/CartContext";
+import { CartDrawer } from "@/components/cart/CartDrawer";
+import { CartNavButton } from "@/components/cart/CartNavButton";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -41,14 +44,18 @@ export default function RootLayout({
               <a href="https://www.instagram.com/carpediemalquilerdevestidos/" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-muted-foreground hover:text-fuchsia-400 transition-colors">
                 Instagram
               </a>
+              <CartNavButton />
             </div>
           </div>
         </nav>
 
         {/* Page content */}
-        <main className="pt-16">
-          {children}
-        </main>
+        <CartProvider>
+          <main className="pt-16">
+            {children}
+          </main>
+          <CartDrawer />
+        </CartProvider>
       </body>
     </html>
   );
