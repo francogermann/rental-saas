@@ -12,7 +12,7 @@ export default function HomePage() {
         {/* Background Image */}
         <div className="absolute inset-0">
           <Image
-            src="https://images.unsplash.com/photo-1518611012118-696072aa579a?w=1400&q=80"
+            src="https://images.unsplash.com/photo-1550639525-c97d455acf70?w=1400&q=80"
             alt="Vestido de gala"
             fill
             className="object-cover object-center"
