@@ -1,7 +1,7 @@
 'use server';
 
-import { createAdminClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 
 export async function createGarment(formData: FormData) {
   const supabase = createAdminClient();
@@ -44,6 +44,7 @@ export async function createGarment(formData: FormData) {
   }
 
   // Redirect on success
+  revalidatePath('/admin/garments');
   redirect('/admin/garments');
 }
 
@@ -81,6 +82,7 @@ export async function updateGarment(formData: FormData) {
     throw new Error('No se pudieron actualizar los datos de la prenda.');
   }
 
+  revalidatePath('/admin/garments');
   redirect('/admin/garments');
 }
 
@@ -98,5 +100,6 @@ export async function updateReservationStatus(formData: FormData) {
     throw new Error(`No se pudo actualizar el estado: ${error.message} (${error.code})`);
   }
 
+  revalidatePath('/admin/reservations');
   redirect('/admin/reservations');
 }
