@@ -14,7 +14,7 @@ export default async function AdminDashboardPage() {
   ] = await Promise.all([
     supabase.from('garments').select('*', { count: 'exact', head: true }),
     supabase.from('reservations').select('*', { count: 'exact', head: true }),
-    supabase.from('reservations').select('*', { count: 'exact', head: true }).eq('status', 'confirmed'),
+    supabase.from('reservations').select('*', { count: 'exact', head: true }).in('status', ['confirmed', 'paid']),
   ]);
 
   // Active reservations for today/this week to show as immediate action items

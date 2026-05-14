@@ -63,11 +63,13 @@ export default async function AdminGarmentsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <Badge className={
-                        g.operative_status === 'disponible' 
+                        g.operative_status === 'available'
                           ? 'bg-emerald-500/20 text-emerald-300'
-                          : g.operative_status === 'mantenimiento'
+                          : g.operative_status === 'processing' || g.operative_status === 'in_cleaning' || g.operative_status === 'in_repair'
                           ? 'bg-amber-500/20 text-amber-300'
-                          : 'bg-red-500/20 text-red-300'
+                          : g.operative_status === 'retired'
+                          ? 'bg-red-500/20 text-red-300'
+                          : 'bg-zinc-500/20 text-zinc-300'
                       }>
                         {g.operative_status}
                       </Badge>

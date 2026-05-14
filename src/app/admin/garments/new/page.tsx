@@ -15,7 +15,6 @@ export default function NewGarmentPage() {
     const formData = new FormData(e.currentTarget);
     const result = await createGarment(formData);
 
-    // If result is returned, it means there was an error (otherwise it redirects)
     if (result?.error) {
       setError(result.error);
       setIsSubmitting(false);
@@ -41,7 +40,7 @@ export default function NewGarmentPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} encType="multipart/form-data" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">Nombre</label>
@@ -84,23 +83,40 @@ export default function NewGarmentPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">Precio de Alquiler (ARS)</label>
-              <input required name="deposit_amount" type="number" min="0" defaultValue="5000" className="w-full h-12 bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl px-4 outline-none transition-all text-foreground font-mono" />
+              <label className="text-sm font-medium text-muted-foreground">Precio de alquiler (ARS)</label>
+              <input required name="rental_price" type="number" min="0" step="100" defaultValue="15000" className="w-full h-12 bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl px-4 outline-none transition-all text-foreground font-mono" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-muted-foreground">Garantía / seña (ARS)</label>
+              <input required name="deposit_amount" type="number" min="0" step="100" defaultValue="20000" className="w-full h-12 bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl px-4 outline-none transition-all text-foreground font-mono" />
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground">URLs de Fotos (Una por línea)</label>
-            <textarea 
-              name="photos_urls" 
-              rows={4} 
-              placeholder="https://ejemplo.com/foto1.jpg"
-              className="w-full bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl p-4 outline-none transition-all text-foreground resize-none font-mono text-sm" 
+            <label className="text-sm font-medium text-muted-foreground">Fotos desde tu computadora</label>
+            <p className="text-xs text-muted-foreground">Podés elegir varias a la vez (JPEG, PNG, WebP o GIF, hasta 5MB c/u, máximo 12).</p>
+            <input
+              name="photos"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              multiple
+              className="block w-full text-sm text-muted-foreground file:mr-4 file:rounded-lg file:border-0 file:bg-fuchsia-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-fuchsia-500"
             />
           </div>
 
-          <button 
-            type="submit" 
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-muted-foreground">URLs de fotos (opcional, una por línea)</label>
+            <p className="text-xs text-muted-foreground">Si ya tenés imágenes hospedadas en otro lado, se combinan con las subidas por archivo (primero URLs, después archivos).</p>
+            <textarea
+              name="photos_urls"
+              rows={3}
+              placeholder="https://ejemplo.com/foto1.jpg"
+              className="w-full bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl p-4 outline-none transition-all text-foreground resize-none font-mono text-sm"
+            />
+          </div>
+
+          <button
+            type="submit"
             disabled={isSubmitting}
             className="w-full bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 disabled:opacity-50 text-white rounded-xl py-4 font-bold tracking-wide shadow-glow transition-all mt-4"
           >

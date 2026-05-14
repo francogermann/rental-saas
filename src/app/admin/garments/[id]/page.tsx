@@ -70,11 +70,14 @@ export default async function EditGarmentPage({ params }: { params: { id: string
               </select>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">Estado Operativo</label>
-              <select required defaultValue={garment.operative_status || ''} name="operative_status" className="w-full h-12 bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl px-4 outline-none transition-all text-foreground">
-                <option className="text-black" value="disponible">🟢 Disponible</option>
-                <option className="text-black" value="mantenimiento">🟡 Mantenimiento / Tintorería</option>
-                <option className="text-black" value="fuera_de_servicio">🔴 Fuera de Servicio</option>
+              <label className="text-sm font-medium text-muted-foreground">Estado operativo</label>
+              <select required defaultValue={garment.operative_status || 'available'} name="operative_status" className="w-full h-12 bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl px-4 outline-none transition-all text-foreground">
+                <option className="text-black" value="available">Disponible (catálogo)</option>
+                <option className="text-black" value="processing">Procesando post-devolución</option>
+                <option className="text-black" value="in_cleaning">En tintorería</option>
+                <option className="text-black" value="in_repair">En reparación</option>
+                <option className="text-black" value="reserved">Reservada (uso interno)</option>
+                <option className="text-black" value="retired">Retirada / baja</option>
               </select>
             </div>
           </div>
