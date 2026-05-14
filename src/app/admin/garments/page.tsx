@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import { Badge } from '@/components/ui/badge';
+import { formatUy } from '@/lib/utils';
 
 export default async function AdminGarmentsPage() {
   const supabase = createAdminClient();
@@ -59,7 +60,7 @@ export default async function AdminGarmentsPage() {
                       {g.category || '-'}
                     </td>
                     <td className="px-6 py-4 font-medium">
-                      ${g.rental_price?.toLocaleString('es-AR')}
+                      {formatUy(g.rental_price)}
                     </td>
                     <td className="px-6 py-4">
                       <Badge className={

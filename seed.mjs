@@ -66,12 +66,14 @@ async function main() {
 
   // 2. Garments (12 vestidos realistas)
   console.log('2. Inserting garments...');
-  const garments = [
+  const depositFor = (rental) => Math.max(300, Math.round(rental / 3));
+
+  const garmentDefs = [
     {
       sku: 'CD-001', name: 'Vestido Navy Halter con Cadena',
       description: 'Minivestido azul marino con escote halter profundo y cinturón de cadena dorada. Perfecto para fiestas y cócteles.',
       category: 'Fiesta', size_label: 'M', chest_cm: 88, waist_cm: 70, hip_cm: 94, length_cm: 80,
-      rental_price: 3500, deposit_amount: 2000,
+      rental_price: 1800,
       photos_urls: ['https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=600&q=80'],
       tags: ['halter', 'cadena', 'navy', 'cocktail'],
     },
@@ -79,7 +81,7 @@ async function main() {
       sku: 'CD-002', name: 'Vestido Royal Blue Satinado',
       description: 'Vestido largo azul royal en satén con escote drapeado y cuello halter. Ideal para galas y eventos formales.',
       category: 'Gala', size_label: 'S', chest_cm: 84, waist_cm: 66, hip_cm: 90, length_cm: 140,
-      rental_price: 4500, deposit_amount: 3000,
+      rental_price: 3200,
       photos_urls: ['https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=600&q=80&fit=crop&crop=top'],
       tags: ['royal blue', 'satin', 'gala', 'formal'],
     },
@@ -87,7 +89,7 @@ async function main() {
       sku: 'CD-003', name: 'Vestido Borgoña con Tajo',
       description: 'Vestido largo color borgoña con escote profundo, cinturón de monedas plateado y tajo lateral. Elegancia total.',
       category: 'Gala', size_label: 'M', chest_cm: 88, waist_cm: 70, hip_cm: 94, length_cm: 145,
-      rental_price: 4200, deposit_amount: 2500,
+      rental_price: 2900,
       photos_urls: ['https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600&q=80'],
       tags: ['borgoña', 'tajo', 'gala', 'cinturon'],
     },
@@ -95,7 +97,7 @@ async function main() {
       sku: 'CD-004', name: 'Vestido Ciruela con Encaje',
       description: 'Vestido largo color ciruela con panel de encaje en la cintura y tirantes finos. Romántico y sofisticado.',
       category: 'Graduación', size_label: 'S', chest_cm: 82, waist_cm: 64, hip_cm: 88, length_cm: 150,
-      rental_price: 3800, deposit_amount: 2000,
+      rental_price: 2100,
       photos_urls: ['https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=600&q=80'],
       tags: ['ciruela', 'encaje', 'graduación', 'largo'],
     },
@@ -103,7 +105,7 @@ async function main() {
       sku: 'CD-005', name: 'Vestido Floral Rosa Tropical',
       description: 'Vestido largo con estampado floral en tonos rosa y rojo, tirantes finos y corte sirena. Perfecto para verano.',
       category: 'Fiesta', size_label: 'M', chest_cm: 86, waist_cm: 68, hip_cm: 92, length_cm: 145,
-      rental_price: 3200, deposit_amount: 1800,
+      rental_price: 1900,
       photos_urls: ['https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=600&q=80'],
       tags: ['floral', 'rosa', 'tropical', 'verano'],
     },
@@ -111,7 +113,7 @@ async function main() {
       sku: 'CD-006', name: 'Vestido Esmeralda Strapless',
       description: 'Vestido largo verde esmeralda strapless con corte recto y abertura lateral. Clásico y elegante.',
       category: 'Gala', size_label: 'L', chest_cm: 92, waist_cm: 76, hip_cm: 100, length_cm: 148,
-      rental_price: 4800, deposit_amount: 3000,
+      rental_price: 3600,
       photos_urls: ['https://images.unsplash.com/photo-1618932260643-eee4a2f652a6?w=600&q=80'],
       tags: ['esmeralda', 'strapless', 'verde', 'gala'],
     },
@@ -119,7 +121,7 @@ async function main() {
       sku: 'CD-007', name: 'Vestido Negro Lentejuelas',
       description: 'Vestido corto negro completamente bordado en lentejuelas. Show-stopper para fiestas de noche.',
       category: 'Fiesta', size_label: 'S', chest_cm: 82, waist_cm: 64, hip_cm: 88, length_cm: 85,
-      rental_price: 3600, deposit_amount: 2200,
+      rental_price: 2200,
       photos_urls: ['https://images.unsplash.com/photo-1550639525-c97d455acf70?w=600&q=80'],
       tags: ['negro', 'lentejuelas', 'cocktail', 'noche'],
     },
@@ -127,7 +129,7 @@ async function main() {
       sku: 'CD-008', name: 'Vestido Champagne Drapeado',
       description: 'Vestido largo champagne con drapeado asymétrico y un hombro. Perfecto para bodas civiles.',
       category: 'Casamiento', size_label: 'M', chest_cm: 86, waist_cm: 68, hip_cm: 92, length_cm: 150,
-      rental_price: 5200, deposit_amount: 3500,
+      rental_price: 3400,
       photos_urls: ['https://images.unsplash.com/photo-1594552072238-b8a33785b261?w=600&q=80'],
       tags: ['champagne', 'drapeado', 'boda', 'un-hombro'],
     },
@@ -135,7 +137,7 @@ async function main() {
       sku: 'CD-009', name: 'Vestido Rojo Pasión',
       description: 'Vestido largo rojo intenso con escote corazón y falda con movimiento. El vestido que todos miran.',
       category: 'Gala', size_label: 'M', chest_cm: 88, waist_cm: 70, hip_cm: 94, length_cm: 148,
-      rental_price: 4500, deposit_amount: 2800,
+      rental_price: 3000,
       photos_urls: ['https://images.unsplash.com/photo-1568252542512-9fe8fe9c87bb?w=600&q=80'],
       tags: ['rojo', 'corazón', 'gala', 'llamativo'],
     },
@@ -143,7 +145,7 @@ async function main() {
       sku: 'CD-010', name: 'Vestido Turquesa Plisado',
       description: 'Vestido midi turquesa con plisado completo y tirantes cruzados en la espalda. Fresco y juvenil.',
       category: 'Graduación', size_label: 'S', chest_cm: 82, waist_cm: 64, hip_cm: 88, length_cm: 110,
-      rental_price: 3000, deposit_amount: 1500,
+      rental_price: 1500,
       photos_urls: ['https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=600&q=80'],
       tags: ['turquesa', 'plisado', 'graduación', 'juvenil'],
     },
@@ -151,7 +153,7 @@ async function main() {
       sku: 'CD-011', name: 'Vestido Nude con Pedrería',
       description: 'Vestido largo nude con aplicaciones de pedrería en el corpiño. Elegancia minimalista que brilla.',
       category: 'Casamiento', size_label: 'L', chest_cm: 92, waist_cm: 76, hip_cm: 100, length_cm: 150,
-      rental_price: 5500, deposit_amount: 3500,
+      rental_price: 3900,
       photos_urls: ['https://images.unsplash.com/photo-1623609163859-ca93c959b98a?w=600&q=80'],
       tags: ['nude', 'pedrería', 'casamiento', 'elegante'],
     },
@@ -159,13 +161,18 @@ async function main() {
       sku: 'CD-012', name: 'Vestido Fucsia Mini Asimétrico',
       description: 'Minivestido fucsia con corte asimétrico y mangas abullonadas. Diversión y glamour en estado puro.',
       category: 'Fiesta', size_label: 'XS', chest_cm: 80, waist_cm: 62, hip_cm: 86, length_cm: 78,
-      rental_price: 2800, deposit_amount: 1500,
+      rental_price: 1400,
       photos_urls: ['https://images.unsplash.com/photo-1612336307429-8a898d10e223?w=600&q=80'],
       tags: ['fucsia', 'mini', 'asimétrico', 'fiesta'],
     },
-  ].map(g => ({ ...g, organization_id: orgId, operative_status: 'available' }));
+  ].map((g) => ({
+    ...g,
+    deposit_amount: depositFor(g.rental_price),
+    organization_id: orgId,
+    operative_status: 'available',
+  }));
 
-  const insertedGarments = await api('garments', garments);
+  const insertedGarments = await api('garments', garmentDefs);
   console.log(`   ✅ ${insertedGarments.length} garments inserted\n`);
 
   // 3. Customers
@@ -192,47 +199,47 @@ async function main() {
   const reservations = [
     {
       customer_id: insertedCustomers[0].id,
-      garment_id: insertedGarments[0].id,  // Navy Halter
+      garment_id: insertedGarments[0].id,
       pickup_date: dateStr(2),
       return_date: dateStr(5),
       event_date: dateStr(3),
       status: 'confirmed',
-      rental_price: 3500,
-      deposit_amount: 2000,
-      total_amount: 5500,
+      rental_price: insertedGarments[0].rental_price,
+      deposit_amount: insertedGarments[0].deposit_amount,
+      total_amount: insertedGarments[0].rental_price + insertedGarments[0].deposit_amount,
     },
     {
       customer_id: insertedCustomers[1].id,
-      garment_id: insertedGarments[2].id,  // Borgoña
+      garment_id: insertedGarments[2].id,
       pickup_date: dateStr(7),
       return_date: dateStr(10),
       event_date: dateStr(8),
       status: 'confirmed',
-      rental_price: 4200,
-      deposit_amount: 2500,
-      total_amount: 6700,
+      rental_price: insertedGarments[2].rental_price,
+      deposit_amount: insertedGarments[2].deposit_amount,
+      total_amount: insertedGarments[2].rental_price + insertedGarments[2].deposit_amount,
     },
     {
       customer_id: insertedCustomers[2].id,
-      garment_id: insertedGarments[4].id,  // Floral Rosa
+      garment_id: insertedGarments[4].id,
       pickup_date: dateStr(-1),
       return_date: dateStr(2),
       event_date: dateStr(0),
       status: 'delivered',
-      rental_price: 3200,
-      deposit_amount: 1800,
-      total_amount: 5000,
+      rental_price: insertedGarments[4].rental_price,
+      deposit_amount: insertedGarments[4].deposit_amount,
+      total_amount: insertedGarments[4].rental_price + insertedGarments[4].deposit_amount,
     },
     {
       customer_id: insertedCustomers[0].id,
-      garment_id: insertedGarments[7].id,  // Champagne
+      garment_id: insertedGarments[7].id,
       pickup_date: dateStr(14),
       return_date: dateStr(17),
       event_date: dateStr(15),
       status: 'pending',
-      rental_price: 5200,
-      deposit_amount: 3500,
-      total_amount: 8700,
+      rental_price: insertedGarments[7].rental_price,
+      deposit_amount: insertedGarments[7].deposit_amount,
+      total_amount: insertedGarments[7].rental_price + insertedGarments[7].deposit_amount,
     },
   ].map(r => ({ ...r, organization_id: orgId }));
 

@@ -1,6 +1,7 @@
 import { createServerClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import { processCheckout } from '@/lib/actions/checkout';
+import { formatUy } from '@/lib/utils';
 
 export default async function CheckoutPage({ 
     params, 
@@ -88,8 +89,8 @@ export default async function CheckoutPage({
                                 <div className="flex-1">
                                     <h3 className="font-medium">{garment.name}</h3>
                                     <p className="text-xs text-muted-foreground mt-1.5 text-balance">
-                                        Retiro: {new Date(searchParams.pickup).toLocaleDateString('es-AR')} <br/>
-                                        Devolución: {new Date(searchParams.return).toLocaleDateString('es-AR')}
+                                        Retiro: {new Date(searchParams.pickup).toLocaleDateString('es-UY')} <br/>
+                                        Devolución: {new Date(searchParams.return).toLocaleDateString('es-UY')}
                                     </p>
                                 </div>
                             </div>
@@ -97,18 +98,18 @@ export default async function CheckoutPage({
                             <div className="space-y-3 text-sm border-t border-white/10 pt-4">
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">Alquiler</span>
-                                    <span>${garment.rental_price?.toLocaleString('es-AR')}</span>
+                                    <span>{formatUy(garment.rental_price)}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">Depósito (Reembolsable)</span>
-                                    <span>${garment.deposit_amount?.toLocaleString('es-AR')}</span>
+                                    <span>{formatUy(garment.deposit_amount)}</span>
                                 </div>
                             </div>
                             
                             <div className="flex justify-between font-bold text-lg border-t border-white/10 pt-4 mt-4">
                                 <span>Total</span>
                                 <span className="bg-gradient-to-r from-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
-                                    ${totalAmount.toLocaleString('es-AR')}
+                                    {formatUy(totalAmount)}
                                 </span>
                             </div>
                         </div>

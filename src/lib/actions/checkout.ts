@@ -114,7 +114,7 @@ export async function processCheckout(formData: FormData) {
                       title: `Alquiler: ${garment.name}`,
                       quantity: 1,
                       unit_price: totalAmount,
-                      currency_id: 'ARS',
+                      currency_id: 'UYU',
                   }
               ],
               payer: {
@@ -248,7 +248,7 @@ export async function processCartCheckout(formData: FormData) {
       title: `Alquiler: ${garment.name}`,
       quantity: 1,
       unit_price: itemTotal,
-      currency_id: 'ARS',
+      currency_id: 'UYU',
     });
   }
 

@@ -81,6 +81,9 @@ export async function createGarment(formData: FormData) {
     if (Number.isNaN(deposit_amount) || deposit_amount < 0) {
         return { error: 'Garantía / seña inválida' };
     }
+    if (deposit_amount > rental_price) {
+        return { error: 'La seña no puede ser mayor que el alquiler (sugerimos ~⅓ del alquiler, ej. $1.500 + $500).' };
+    }
     if (files.length > MAX_PHOTO_FILES) {
         return { error: `Máximo ${MAX_PHOTO_FILES} archivos de imagen` };
     }
@@ -162,6 +165,10 @@ export async function updateGarment(formData: FormData) {
     const deposit_amount = parseFloat(formData.get('deposit_amount') as string);
     const photos_urls_raw = formData.get('photos_urls') as string;
     const photos_urls = parsePhotosUrlsField(photos_urls_raw);
+
+    if (!Number.isNaN(rental_price) && !Number.isNaN(deposit_amount) && deposit_amount > rental_price) {
+        throw new Error('La seña no puede ser mayor que el alquiler.');
+    }
 
     const { error } = await supabase.from('garments')
         .update({

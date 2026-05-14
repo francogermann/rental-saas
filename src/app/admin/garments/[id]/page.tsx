@@ -84,12 +84,13 @@ export default async function EditGarmentPage({ params }: { params: { id: string
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">Precio de Alquiler (ARS)</label>
-              <input required defaultValue={garment.rental_price || 0} name="rental_price" type="number" min="0" className="w-full h-12 bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl px-4 outline-none transition-all text-foreground font-mono" />
+              <label className="text-sm font-medium text-muted-foreground">Precio de alquiler (UYU)</label>
+              <input required defaultValue={garment.rental_price || 0} name="rental_price" type="number" min="0" step="50" className="w-full h-12 bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl px-4 outline-none transition-all text-foreground font-mono" />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">Valor de Garantía (ARS)</label>
-              <input required defaultValue={garment.deposit_amount || 0} name="deposit_amount" type="number" min="0" className="w-full h-12 bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl px-4 outline-none transition-all text-foreground font-mono" />
+              <label className="text-sm font-medium text-muted-foreground">Garantía / seña (UYU)</label>
+              <p className="text-xs text-muted-foreground">Debe ser menor o igual al alquiler (típico ~⅓).</p>
+              <input required defaultValue={garment.deposit_amount || 0} name="deposit_amount" type="number" min="0" step="50" className="w-full h-12 bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl px-4 outline-none transition-all text-foreground font-mono" />
             </div>
           </div>
 

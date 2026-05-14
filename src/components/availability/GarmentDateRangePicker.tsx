@@ -155,7 +155,7 @@ export function GarmentDateRangePicker({
 
 function RangeSummary({ from, to, minDays, maxDays }: { from: Date; to: Date; minDays: number; maxDays: number }) {
     const days = Math.round((to.getTime() - from.getTime()) / 86_400_000) + 1;
-    const fmt = (d: Date) => d.toLocaleDateString('es-AR', { day: '2-digit', month: 'long' });
+    const fmt = (d: Date) => d.toLocaleDateString('es-UY', { day: '2-digit', month: 'long' });
     const isValid = days >= minDays && days <= maxDays;
 
     return (

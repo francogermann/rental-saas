@@ -83,12 +83,13 @@ export default function NewGarmentPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">Precio de alquiler (ARS)</label>
-              <input required name="rental_price" type="number" min="0" step="100" defaultValue="15000" className="w-full h-12 bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl px-4 outline-none transition-all text-foreground font-mono" />
+              <label className="text-sm font-medium text-muted-foreground">Precio de alquiler (UYU)</label>
+              <input required name="rental_price" type="number" min="0" step="50" defaultValue="1500" className="w-full h-12 bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl px-4 outline-none transition-all text-foreground font-mono" />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">Garantía / seña (ARS)</label>
-              <input required name="deposit_amount" type="number" min="0" step="100" defaultValue="20000" className="w-full h-12 bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl px-4 outline-none transition-all text-foreground font-mono" />
+              <label className="text-sm font-medium text-muted-foreground">Garantía / seña (UYU)</label>
+              <p className="text-xs text-muted-foreground">No puede superar el alquiler; suele ser ~⅓ (ej. $1.500 + $500).</p>
+              <input required name="deposit_amount" type="number" min="0" step="50" defaultValue="500" className="w-full h-12 bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl px-4 outline-none transition-all text-foreground font-mono" />
             </div>
           </div>
 

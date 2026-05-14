@@ -8,6 +8,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useCart } from '@/components/cart/CartContext';
+import { formatUy } from '@/lib/utils';
 
 // Types
 interface Garment {
@@ -426,7 +427,7 @@ export default function CatalogClient({ garments, error, initialPickupDate, init
                 <CardFooter className="p-5 pt-0 flex justify-between items-end">
                   <div className="flex flex-col">
                     <span className="text-xs font-medium text-muted-foreground mb-0.5">Alquiler</span>
-                    <span className="font-bold text-lg">${g.rental_price?.toLocaleString('es-AR')}</span>
+                    <span className="font-bold text-lg">{formatUy(g.rental_price)}</span>
                   </div>
                   <div className="flex gap-2">
                     <button 

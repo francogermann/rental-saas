@@ -34,6 +34,8 @@ DECLARE
   v_idx int;
   v_pickup date;
   v_return date;
+  v_rent numeric;
+  v_dep numeric;
   st text;
   rec record;
 BEGIN
@@ -76,8 +78,8 @@ BEGIN
       80 + (i * 2),
       62 + i,
       88 + i,
-      (12000 + (i * 1500))::numeric,
-      (18000 + (i * 2000))::numeric,
+      (1000 + (i * 120))::numeric,
+      greatest(300, round((1000 + (i * 120)) / 3.0))::numeric,
       'available',
       ARRAY[
         'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800&q=80',
@@ -103,6 +105,9 @@ BEGIN
       v_return := v_pickup + 4;
       st := CASE WHEN j = 3 THEN 'cancelled' ELSE 'returned' END;
 
+      v_rent := (1200 + (v_idx * 60) + (j * 40))::numeric;
+      v_dep := greatest(300, round(v_rent / 3.0))::numeric;
+
       SELECT id INTO v_customer_id FROM public.customers
       WHERE organization_id = v_org
       ORDER BY random()
@@ -121,10 +126,10 @@ BEGIN
         v_pickup,
         v_return,
         st,
-        15000,
-        20000,
+        v_rent,
+        v_dep,
         0,
-        35000,
+        v_rent + v_dep,
         'demo-pref-' || gen_random_uuid()::text,
         CASE WHEN st = 'cancelled' THEN NULL ELSE 'approved' END
       )
@@ -151,6 +156,9 @@ BEGIN
     v_return := v_pickup + 5;
     st := (ARRAY['pending','confirmed','paid','delivered'])[1 + ((v_idx - 1) % 4)];
 
+    v_rent := (1500 + (v_idx * 50))::numeric;
+    v_dep := greatest(300, round(v_rent / 3.0))::numeric;
+
     SELECT id INTO v_customer_id FROM public.customers
     WHERE organization_id = v_org
     ORDER BY random()
@@ -169,10 +177,10 @@ BEGIN
       v_pickup,
       v_return,
       st,
-      16000,
-      22000,
+      v_rent,
+      v_dep,
       0,
-      38000,
+      v_rent + v_dep,
       'demo-pref-' || gen_random_uuid()::text,
       CASE WHEN st = 'pending' THEN NULL ELSE 'approved' END
     )
@@ -207,6 +215,9 @@ BEGIN
     v_pickup := (CURRENT_DATE - INTERVAL '400 days')::date + (j * 9);
     v_return := v_pickup + 3;
 
+    v_rent := (1100 + (j * 25))::numeric;
+    v_dep := greatest(300, round(v_rent / 3.0))::numeric;
+
     INSERT INTO public.reservations (
       organization_id, customer_id, garment_id,
       pickup_date, return_date, status,
@@ -219,10 +230,10 @@ BEGIN
       v_pickup,
       v_return,
       'returned',
-      14000,
-      19000,
+      v_rent,
+      v_dep,
       0,
-      33000,
+      v_rent + v_dep,
       'approved'
     )
     RETURNING id INTO v_res_id;

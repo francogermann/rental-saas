@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import ClientDateSelector from './ClientDateSelector';
+import { formatUy } from '@/lib/utils';
 
 export default async function GarmentDetailPage({ params }: { params: { garmentId: string } }) {
   const supabase = createAdminClient();
@@ -76,12 +77,12 @@ export default async function GarmentDetailPage({ params }: { params: { garmentI
                 <div>
                   <p className="text-sm text-muted-foreground font-medium mb-1 uppercase tracking-widest">Valor de Alquiler</p>
                   <p className="text-3xl font-bold bg-gradient-to-r from-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
-                    ${garment.rental_price?.toLocaleString('es-AR')}
+                    {formatUy(garment.rental_price)}
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-muted-foreground mb-1 uppercase tracking-widest">Garantía / Seña</p>
-                  <p className="text-xl text-muted-foreground">${garment.deposit_amount?.toLocaleString('es-AR')}</p>
+                  <p className="text-xl text-muted-foreground">{formatUy(garment.deposit_amount)}</p>
                 </div>
               </div>
             </div>

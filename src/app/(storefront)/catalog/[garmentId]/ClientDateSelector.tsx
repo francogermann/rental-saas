@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { GarmentDateRangePicker } from '@/components/availability/GarmentDateRangePicker';
 import { useCart } from '@/components/cart/CartContext';
+import { formatUy } from '@/lib/utils';
 import type { GarmentSummary } from '@/types/domain';
 
 interface ClientDateSelectorProps {
@@ -34,7 +35,7 @@ export default function ClientDateSelector({ garment }: ClientDateSelectorProps)
            <div className="flex justify-between items-center mb-6">
               <span className="text-sm font-medium text-muted-foreground uppercase tracking-widest">A abonar hoy:</span>
               <span className="font-extrabold text-2xl bg-gradient-to-r from-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
-                ${((garment.rental_price || 0) + (garment.deposit_amount || 0)).toLocaleString('es-AR')}
+                {formatUy((garment.rental_price || 0) + (garment.deposit_amount || 0))}
               </span>
            </div>
            

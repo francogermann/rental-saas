@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { processCartCheckout } from '@/lib/actions/checkout';
 import { useState } from 'react';
+import { formatUy } from '@/lib/utils';
 
 export default function CheckoutClientPage() {
   const { items, totalSubtotal, totalDeposit } = useCart();
@@ -142,7 +143,7 @@ export default function CheckoutClientPage() {
                     </div>
 
                     <div className="mt-auto text-sm font-semibold">
-                      ${item.garment.rental_price?.toLocaleString('es-AR')}
+                      {formatUy(item.garment.rental_price)}
                     </div>
                   </div>
                 </div>
@@ -151,15 +152,15 @@ export default function CheckoutClientPage() {
               <div className="pt-4 space-y-2 text-sm mt-2">
                 <div className="flex justify-between text-muted-foreground">
                   <span>Subtotal Alquiler</span>
-                  <span>${totalSubtotal.toLocaleString('es-AR')}</span>
+                  <span>{formatUy(totalSubtotal)}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Garantía Reembolsable</span>
-                  <span>${totalDeposit.toLocaleString('es-AR')}</span>
+                  <span>{formatUy(totalDeposit)}</span>
                 </div>
                 <div className="flex justify-between text-xl font-display font-bold pt-4 border-t border-white/10">
                   <span>Total</span>
-                  <span className="text-fuchsia-400">${(totalSubtotal + totalDeposit).toLocaleString('es-AR')}</span>
+                  <span className="text-fuchsia-400">{formatUy(totalSubtotal + totalDeposit)}</span>
                 </div>
               </div>
             </div>

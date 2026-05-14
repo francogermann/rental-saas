@@ -3,6 +3,7 @@
 import { useCart } from './CartContext';
 import Image from 'next/image';
 import Link from 'next/link';
+import { formatUy } from '@/lib/utils';
 
 export function CartDrawer() {
   const { items, isCartOpen, setIsCartOpen, removeItem, totalSubtotal, totalDeposit } = useCart();
@@ -67,7 +68,7 @@ export function CartDrawer() {
                   </div>
 
                   <div className="mt-auto pt-2 flex items-end justify-between">
-                    <span className="font-bold text-lg">${item.garment.rental_price?.toLocaleString('es-AR')}</span>
+                    <span className="font-bold text-lg">{formatUy(item.garment.rental_price)}</span>
                   </div>
                 </div>
 
@@ -90,15 +91,15 @@ export function CartDrawer() {
             <div className="space-y-2 mb-6 text-sm">
               <div className="flex justify-between text-muted-foreground">
                 <span>Subtotal (Alquiler)</span>
-                <span>${totalSubtotal.toLocaleString('es-AR')}</span>
+                <span>{formatUy(totalSubtotal)}</span>
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>Garantía Reembolsable</span>
-                <span>${totalDeposit.toLocaleString('es-AR')}</span>
+                <span>{formatUy(totalDeposit)}</span>
               </div>
               <div className="flex justify-between text-lg font-bold pt-2 border-t border-white/10">
                 <span>Total a pagar hoy</span>
-                <span className="text-fuchsia-400">${(totalSubtotal + totalDeposit).toLocaleString('es-AR')}</span>
+                <span className="text-fuchsia-400">{formatUy(totalSubtotal + totalDeposit)}</span>
               </div>
             </div>
 
