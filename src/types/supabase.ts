@@ -32,6 +32,7 @@ export type Database = {
           notes: string | null
           organization_id: string
           phone: string | null
+          pii_anonymized_at: string | null
           tags: string[]
           updated_at: string
         }
@@ -52,6 +53,7 @@ export type Database = {
           notes?: string | null
           organization_id: string
           phone?: string | null
+          pii_anonymized_at?: string | null
           tags?: string[]
           updated_at?: string
         }
@@ -72,6 +74,7 @@ export type Database = {
           notes?: string | null
           organization_id?: string
           phone?: string | null
+          pii_anonymized_at?: string | null
           tags?: string[]
           updated_at?: string
         }

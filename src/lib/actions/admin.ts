@@ -1,6 +1,7 @@
 'use server';
 
 import { randomUUID } from 'crypto';
+import { z } from 'zod';
 import { createAdminClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
@@ -12,6 +13,14 @@ const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
 export type AdminLocationOption = { id: string; name: string; address_line: string };
+
+function safeReservationsRedirect(formData: FormData): string {
+    const raw = String(formData.get('next') ?? '').trim();
+    if (raw.startsWith('/admin/reservations') && !raw.includes('//') && !raw.includes('@')) {
+        return raw;
+    }
+    return '/admin/reservations';
+}
 
 export async function listGarmentLocations(): Promise<AdminLocationOption[]> {
     await requireAdminSession();
@@ -258,8 +267,12 @@ export async function updateGarment(formData: FormData) {
 export async function updateReservationStatus(formData: FormData) {
     await requireAdminSession();
     const supabase = createAdminClient();
-    const id = formData.get('id') as string;
-    const status = formData.get('status') as string;
+    const id = String(formData.get('id') ?? '');
+    const status = String(formData.get('status') ?? '');
+
+    if (!z.string().uuid().safeParse(id).success) {
+        redirect(safeReservationsRedirect(formData));
+    }
 
     const { error } = await supabase.from('reservations')
         .update({ status })
@@ -271,5 +284,35 @@ export async function updateReservationStatus(formData: FormData) {
     }
 
     revalidatePath('/admin/reservations');
-    redirect('/admin/reservations');
+    redirect(safeReservationsRedirect(formData));
+}
+
+export async function anonymizeCustomer(formData: FormData) {
+    await requireAdminSession();
+    const id = String(formData.get('customer_id') ?? '');
+    if (!z.string().uuid().safeParse(id).success) {
+        redirect(safeReservationsRedirect(formData));
+    }
+
+    const supabase = createAdminClient();
+    const anonEmail = `anon+${id}@redacted.invalid`;
+    const { error } = await supabase
+        .from('customers')
+        .update({
+            first_name: 'Cliente',
+            last_name: 'Anónimo',
+            email: anonEmail,
+            phone: null,
+            id_document: null,
+            pii_anonymized_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+
+    if (error) {
+        console.error('anonymizeCustomer:', error);
+        throw new Error('No se pudo anonimizar los datos de la clienta.');
+    }
+
+    revalidatePath('/admin/reservations');
+    redirect(safeReservationsRedirect(formData));
 }
