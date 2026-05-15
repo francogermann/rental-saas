@@ -1,12 +1,27 @@
 // ============================================================================
-// seed.mjs — Popula la base de datos con datos realistas de Carpe Diem
-// Ejecutar: node seed.mjs
+// seed.mjs — Pobla un proyecto Supabase REMOTO vía REST (service role).
+//
+// Para desarrollo LOCAL con Docker: preferí datos coherentes con
+//   npx supabase db reset
+// que aplica supabase/seed.sql (fuente principal de QA maison-demo).
+//
+// Remoto: definí SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY (p. ej. en .env.local)
+// y ejecutá: npm run seed:remote   (usa --env-file=.env.local; Node 20+)
 // ============================================================================
 
 import { randomUUID } from 'node:crypto';
 
-const SUPABASE_URL = 'https://fjozuxxqpgfamggomgcj.supabase.co';
-const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqb3p1eHhxcGdmYW1nZ29tZ2NqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODcwMjkwNywiZXhwIjoyMDk0Mjc4OTA3fQ.pFJ75d6eIHjN1NlDlm1N1cJe_U3acXQMdIvpTiEWvoI';
+const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
+  console.error(
+    'Faltan SUPABASE_URL y/o SUPABASE_SERVICE_ROLE_KEY en el entorno.\n' +
+      '  Local: usá `npx supabase db reset` (recomendado; aplica supabase/seed.sql).\n' +
+      '  Remoto: copiá las variables al .env.local y ejecutá `npm run seed:remote`.',
+  );
+  process.exit(1);
+}
 
 const headers = {
   'Content-Type': 'application/json',

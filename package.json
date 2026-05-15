@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "seed:remote": "node --env-file=.env.local seed.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
