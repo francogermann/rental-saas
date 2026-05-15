@@ -1,15 +1,18 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
-import { updateGarment } from '@/lib/actions/admin';
+import { listGarmentLocations, updateGarment } from '@/lib/actions/admin';
 
 export default async function EditGarmentPage({ params }: { params: { id: string } }) {
   const supabase = createAdminClient();
 
-  const { data: garment, error } = await supabase
-    .from('garments')
-    .select('*')
-    .eq('id', params.id)
-    .single();
+  const [{ data: garment, error }, locations] = await Promise.all([
+    supabase
+      .from('garments')
+      .select('*')
+      .eq('id', params.id)
+      .single(),
+    listGarmentLocations(),
+  ]);
 
   if (error || !garment) {
     notFound();
@@ -78,6 +81,24 @@ export default async function EditGarmentPage({ params }: { params: { id: string
                 <option className="text-black" value="in_repair">En reparación</option>
                 <option className="text-black" value="reserved">Reservada (uso interno)</option>
                 <option className="text-black" value="retired">Retirada / baja</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-muted-foreground">Sede</label>
+              <select
+                name="location_id"
+                defaultValue={garment.location_id || ''}
+                className="w-full h-12 bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl px-4 outline-none transition-all text-foreground"
+              >
+                <option className="text-black" value="">Sin asignar</option>
+                {locations.map((loc) => (
+                  <option className="text-black" key={loc.id} value={loc.id}>
+                    {loc.name} — {loc.address_line}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

@@ -1,25 +1,53 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createAdminClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import ClientDateSelector from './ClientDateSelector';
 import { formatUy } from '@/lib/utils';
+import type { Database } from '@/types/supabase';
+import type { GarmentSummary } from '@/types/domain';
+
+type GarmentRow = Database['public']['Tables']['garments']['Row'];
+type GarmentDetailRow = GarmentRow & {
+  locations: { name: string; address_line: string } | null;
+};
 
 export default async function GarmentDetailPage({ params }: { params: { garmentId: string } }) {
   const supabase = createAdminClient();
 
-  const { data: garment, error } = await supabase
+  const { data, error } = await supabase
     .from('garments')
     .select(`
-      id, name, sku, description, category, size_label, rental_price, deposit_amount, photos_urls, operative_status
+      *,
+      locations ( name, address_line )
     `)
     .eq('id', params.garmentId)
     .single();
 
-  if (error || !garment) {
+  if (error || !data) {
     notFound();
   }
+
+  const garment = data as GarmentDetailRow;
+  const loc = garment.locations;
+
+  const cartGarment: GarmentSummary = {
+    id: garment.id,
+    name: garment.name,
+    sku: garment.sku,
+    size_label: garment.size_label,
+    category: garment.category,
+    rental_price: garment.rental_price,
+    deposit_amount: garment.deposit_amount,
+    photos_urls: garment.photos_urls ?? [],
+    chest_cm: garment.chest_cm,
+    waist_cm: garment.waist_cm,
+    hip_cm: garment.hip_cm,
+    tags: garment.tags ?? [],
+    style_group_id: garment.style_group_id,
+    location_id: garment.location_id,
+    location_name: loc?.name ?? null,
+  };
 
   return (
     <div className="min-h-screen">
@@ -69,6 +97,13 @@ export default async function GarmentDetailPage({ params }: { params: { garmentI
               <p className="text-lg text-muted-foreground leading-relaxed">
                 {garment.description || "Vestido exclusivo de Carpe Diem. Elegí tus fechas y reservalo sin agenda previa."}
               </p>
+              {loc?.name && (
+                <p className="text-sm text-fuchsia-300/90 mt-3">
+                  <span className="font-medium text-fuchsia-200/90">Sede: </span>
+                  {loc.name}
+                  <span className="text-muted-foreground font-normal"> — {loc.address_line}</span>
+                </p>
+              )}
             </div>
 
             {/* Price Section */}
@@ -90,9 +125,7 @@ export default async function GarmentDetailPage({ params }: { params: { garmentI
             {/* Calendar */}
             <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
               <h3 className="font-display text-lg font-semibold mb-6 tracking-tight">Seleccionar Fechas</h3>
-              <ClientDateSelector 
-                garment={garment as any}
-              />
+              <ClientDateSelector garment={cartGarment} />
             </div>
 
           </div>

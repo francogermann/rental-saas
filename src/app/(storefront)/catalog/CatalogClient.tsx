@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -10,18 +9,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useCart } from '@/components/cart/CartContext';
 import { formatUy } from '@/lib/utils';
 
-// Types
-interface Garment {
-  id: string;
-  name: string;
-  sku: string;
-  category: string | null;
-  size_label: string | null;
-  rental_price: number | null;
-  deposit_amount: number | null;
-  photos_urls: string[] | null;
-  tags: string[] | null;
-}
+import type { GarmentSummary } from '@/types/domain';
 
 // Filter options
 const EVENT_TYPES = [
@@ -67,7 +55,7 @@ const COLORS = [
 ];
 
 interface CatalogClientProps {
-  garments: Garment[];
+  garments: GarmentSummary[];
   error: string | null;
   initialPickupDate: string;
   initialReturnDate: string;
@@ -416,6 +404,11 @@ export default function CatalogClient({ garments, error, initialPickupDate, init
                         Talle {g.size_label}
                       </Badge>
                     )}
+                    {g.location_name && (
+                      <Badge variant="outline" className="bg-black/50 backdrop-blur-md border-white/20 text-white/85 shadow-lg max-w-[11rem] truncate" title={g.location_name}>
+                        {g.location_name}
+                      </Badge>
+                    )}
                   </div>
                 </div>
                 
@@ -431,7 +424,7 @@ export default function CatalogClient({ garments, error, initialPickupDate, init
                   </div>
                   <div className="flex gap-2">
                     <button 
-                      onClick={() => addItem({ garment: g as any, pickupDate, returnDate })}
+                      onClick={() => addItem({ garment: g, pickupDate, returnDate })}
                       className="rounded-2xl bg-white/5 border border-white/10 text-white hover:bg-white/10 active:scale-95 px-4 py-2 transition-all duration-300 text-sm font-semibold"
                     >
                       Añadir

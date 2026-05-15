@@ -7,7 +7,7 @@ export default async function AdminGarmentsPage() {
 
   const { data: garments, error } = await supabase
     .from('garments')
-    .select('*')
+    .select('*, locations(name, address_line)')
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -34,6 +34,7 @@ export default async function AdminGarmentsPage() {
                 <th className="px-6 py-4 font-semibold">Prenda / SKU</th>
                 <th className="px-6 py-4 font-semibold">Talle</th>
                 <th className="px-6 py-4 font-semibold">Categoría</th>
+                <th className="px-6 py-4 font-semibold">Sede</th>
                 <th className="px-6 py-4 font-semibold">Precio Alquiler</th>
                 <th className="px-6 py-4 font-semibold">Estado</th>
                 <th className="px-6 py-4 font-semibold text-right">Acciones</th>
@@ -42,12 +43,14 @@ export default async function AdminGarmentsPage() {
             <tbody className="divide-y divide-white/5">
               {!garments || garments.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
+                  <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
                     No hay prendas registradas aún.
                   </td>
                 </tr>
               ) : (
-                garments.map((g) => (
+                garments.map((g) => {
+                  const loc = g.locations as { name: string; address_line: string } | null;
+                  return (
                   <tr key={g.id} className="hover:bg-white/[0.02] transition-colors">
                     <td className="px-6 py-4">
                       <div className="font-medium text-foreground">{g.name}</div>
@@ -58,6 +61,9 @@ export default async function AdminGarmentsPage() {
                     </td>
                     <td className="px-6 py-4 text-muted-foreground">
                       {g.category || '-'}
+                    </td>
+                    <td className="px-6 py-4 text-muted-foreground max-w-[200px] truncate" title={loc ? `${loc.name} — ${loc.address_line}` : ''}>
+                      {loc?.name || '—'}
                     </td>
                     <td className="px-6 py-4 font-medium">
                       {formatUy(g.rental_price)}
@@ -84,7 +90,8 @@ export default async function AdminGarmentsPage() {
                       </a>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>

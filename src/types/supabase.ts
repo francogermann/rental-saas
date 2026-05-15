@@ -148,6 +148,44 @@ export type Database = {
           },
         ]
       }
+      locations: {
+        Row: {
+          address_line: string
+          created_at: string
+          id: string
+          name: string
+          organization_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          address_line: string
+          created_at?: string
+          id?: string
+          name: string
+          organization_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          address_line?: string
+          created_at?: string
+          id?: string
+          name?: string
+          organization_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "locations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       garments: {
         Row: {
           category: string | null
@@ -158,6 +196,7 @@ export type Database = {
           hip_cm: number | null
           id: string
           length_cm: number | null
+          location_id: string | null
           name: string
           notes: string | null
           operative_status: string
@@ -167,6 +206,7 @@ export type Database = {
           sale_price: number | null
           size_label: string | null
           sku: string
+          style_group_id: string | null
           tags: string[]
           updated_at: string
           waist_cm: number | null
@@ -180,6 +220,7 @@ export type Database = {
           hip_cm?: number | null
           id?: string
           length_cm?: number | null
+          location_id?: string | null
           name: string
           notes?: string | null
           operative_status?: string
@@ -189,6 +230,7 @@ export type Database = {
           sale_price?: number | null
           size_label?: string | null
           sku: string
+          style_group_id?: string | null
           tags?: string[]
           updated_at?: string
           waist_cm?: number | null
@@ -202,6 +244,7 @@ export type Database = {
           hip_cm?: number | null
           id?: string
           length_cm?: number | null
+          location_id?: string | null
           name?: string
           notes?: string | null
           operative_status?: string
@@ -211,11 +254,19 @@ export type Database = {
           sale_price?: number | null
           size_label?: string | null
           sku?: string
+          style_group_id?: string | null
           tags?: string[]
           updated_at?: string
           waist_cm?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "garments_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "garments_organization_id_fkey"
             columns: ["organization_id"]
@@ -383,6 +434,7 @@ export type Database = {
           p_limit?: number
           p_max_price?: number
           p_offset?: number
+          p_organization_id?: string
           p_pickup_date: string
           p_return_date: string
           p_size_label?: string
@@ -394,11 +446,14 @@ export type Database = {
           deposit_amount: number
           hip_cm: number
           id: string
+          location_id: string | null
+          location_name: string | null
           name: string
           photos_urls: string[]
           rental_price: number
           size_label: string
           sku: string
+          style_group_id: string | null
           tags: string[]
           waist_cm: number
         }[]

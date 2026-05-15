@@ -79,6 +79,8 @@ export interface Garment {
     photos_urls: string[];
     tags: string[];
     notes: string | null;
+    location_id: string | null;
+    style_group_id: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -97,6 +99,9 @@ export interface GarmentSummary {
     waist_cm: number | null;
     hip_cm: number | null;
     tags: string[];
+    style_group_id?: string | null;
+    location_id?: string | null;
+    location_name?: string | null;
 }
 
 export interface GarmentBlock {

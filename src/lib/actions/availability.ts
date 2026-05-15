@@ -93,7 +93,6 @@ export async function searchAvailableGarments(
     }
 
     const { data, error } = await supabase.rpc('get_available_garments', {
-        p_organization_id: orgData.id,
         p_pickup_date: pickupDate,
         p_return_date: returnDate,
         p_size_label: sizeLabel ?? undefined,
@@ -103,6 +102,7 @@ export async function searchAvailableGarments(
         p_max_price: maxPrice ?? undefined,
         p_limit: limit,
         p_offset: offset,
+        p_organization_id: orgData.id,
     });
 
     if (error) {

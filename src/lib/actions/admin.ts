@@ -10,6 +10,21 @@ const MAX_PHOTO_FILES = 12;
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
+export type AdminLocationOption = { id: string; name: string; address_line: string };
+
+export async function listGarmentLocations(): Promise<AdminLocationOption[]> {
+    const supabase = createAdminClient();
+    const { data: org } = await supabase.from('organizations').select('id').eq('slug', 'maison-demo').single();
+    if (!org) return [];
+    const { data, error } = await supabase
+        .from('locations')
+        .select('id, name, address_line')
+        .eq('organization_id', org.id)
+        .order('sort_order', { ascending: true });
+    if (error || !data) return [];
+    return data;
+}
+
 function extForMime(mime: string): string {
     if (mime === 'image/jpeg') return 'jpg';
     if (mime === 'image/png') return 'png';
@@ -31,10 +46,24 @@ function collectPhotoFiles(formData: FormData): File[] {
     return out;
 }
 
+function collectSizes(formData: FormData): string[] {
+    const raw = formData.getAll('sizes');
+    const sizes: string[] = [];
+    for (const item of raw) {
+        if (typeof item === 'string' && item.trim()) sizes.push(item.trim());
+    }
+    return sizes;
+}
+
+/** Sufijo estable para SKU (ej. Plus Size -> Plus-Size). */
+function skuSuffixForSize(size: string): string {
+    return size.trim().replace(/\s+/g, '-');
+}
+
 async function uploadGarmentPhotoFiles(
     supabase: ReturnType<typeof createAdminClient>,
     organizationId: string,
-    garmentId: string,
+    storageFolder: string,
     files: File[],
 ): Promise<{ urls: string[]; error?: string }> {
     const urls: string[] = [];
@@ -46,7 +75,7 @@ async function uploadGarmentPhotoFiles(
             return { urls, error: `Archivo demasiado grande (máx 5MB): ${file.name}` };
         }
         const ext = extForMime(file.type);
-        const path = `${organizationId}/${garmentId}/${randomUUID()}.${ext}`;
+        const path = `${organizationId}/${storageFolder}/${randomUUID()}.${ext}`;
         const body = Buffer.from(await file.arrayBuffer());
         const { error } = await supabase.storage.from(GARMENT_PHOTOS_BUCKET).upload(path, body, {
             contentType: file.type,
@@ -65,16 +94,24 @@ async function uploadGarmentPhotoFiles(
 export async function createGarment(formData: FormData) {
     const supabase = createAdminClient();
 
-    const name = formData.get('name') as string;
-    const sku = formData.get('sku') as string;
+    const name = (formData.get('name') as string)?.trim();
+    const skuBase = (formData.get('sku') as string)?.trim();
     const description = formData.get('description') as string;
-    const size_label = formData.get('size_label') as string;
     const category = formData.get('category') as string;
     const rental_price = parseFloat(String(formData.get('rental_price') ?? ''));
     const deposit_amount = parseFloat(String(formData.get('deposit_amount') ?? ''));
     const photos_urls = parsePhotosUrlsField(formData.get('photos_urls') as string | null);
     const files = collectPhotoFiles(formData);
+    const sizes = collectSizes(formData);
+    const locationIdRaw = formData.get('location_id') as string | null;
+    const location_id = locationIdRaw && locationIdRaw.length > 0 ? locationIdRaw : null;
 
+    if (!name || !skuBase || !description || !category) {
+        return { error: 'Completá nombre, SKU base, descripción y categoría.' };
+    }
+    if (sizes.length === 0) {
+        return { error: 'Seleccioná al menos un talle disponible.' };
+    }
     if (Number.isNaN(rental_price) || rental_price < 0) {
         return { error: 'Precio de alquiler inválido' };
     }
@@ -99,52 +136,57 @@ export async function createGarment(formData: FormData) {
 
     if (!orgData) return { error: 'Organización no encontrada' };
 
-    const { data: inserted, error: insertError } = await supabase
-        .from('garments')
-        .insert({
-            organization_id: orgData.id,
-            name,
-            sku,
-            description,
-            size_label,
-            category,
-            rental_price,
-            deposit_amount,
-            photos_urls,
-            operative_status: 'available',
-        })
-        .select('id')
-        .single();
-
-    if (insertError || !inserted) {
-        console.error('Error creating garment:', insertError);
-        return { error: 'No se pudo crear la prenda. Verificá que el SKU sea único.' };
+    if (location_id) {
+        const { data: locOk } = await supabase
+            .from('locations')
+            .select('id')
+            .eq('id', location_id)
+            .eq('organization_id', orgData.id)
+            .maybeSingle();
+        if (!locOk) {
+            return { error: 'La sede seleccionada no es válida.' };
+        }
     }
 
-    const garmentId = inserted.id;
+    const style_group_id = randomUUID();
+    let mergedPhotos = [...photos_urls];
 
     if (files.length > 0) {
         const { urls: uploaded, error: uploadError } = await uploadGarmentPhotoFiles(
             supabase,
             orgData.id,
-            garmentId,
+            style_group_id,
             files,
         );
         if (uploadError) {
-            if (photos_urls.length === 0) {
-                await supabase.from('garments').delete().eq('id', garmentId);
-            }
             return { error: uploadError };
         }
-        const merged = [...photos_urls, ...uploaded];
-        const { error: updateError } = await supabase
-            .from('garments')
-            .update({ photos_urls: merged })
-            .eq('id', garmentId);
-        if (updateError) {
-            console.error('Error updating garment photos:', updateError);
-            return { error: 'La prenda se creó pero falló guardar las fotos subidas.' };
-        }
+        mergedPhotos = [...photos_urls, ...uploaded];
+    }
+
+    const rows = sizes.map((size_label) => ({
+        organization_id: orgData.id,
+        name,
+        sku: `${skuBase}-${skuSuffixForSize(size_label)}`,
+        description,
+        size_label,
+        category,
+        rental_price,
+        deposit_amount,
+        photos_urls: mergedPhotos,
+        operative_status: 'available' as const,
+        location_id,
+        style_group_id,
+    }));
+
+    const { data: insertedRows, error: insertError } = await supabase
+        .from('garments')
+        .insert(rows)
+        .select('id');
+
+    if (insertError || !insertedRows?.length) {
+        console.error('Error creating garments:', insertError);
+        return { error: 'No se pudieron crear las prendas. Verificá que los SKU sean únicos (base sin duplicar).' };
     }
 
     revalidatePath('/admin/garments');
@@ -165,9 +207,24 @@ export async function updateGarment(formData: FormData) {
     const deposit_amount = parseFloat(formData.get('deposit_amount') as string);
     const photos_urls_raw = formData.get('photos_urls') as string;
     const photos_urls = parsePhotosUrlsField(photos_urls_raw);
+    const locationIdRaw = formData.get('location_id') as string | null;
+    const location_id = locationIdRaw && locationIdRaw.length > 0 ? locationIdRaw : null;
 
     if (!Number.isNaN(rental_price) && !Number.isNaN(deposit_amount) && deposit_amount > rental_price) {
         throw new Error('La seña no puede ser mayor que el alquiler.');
+    }
+
+    const { data: row } = await supabase.from('garments').select('organization_id').eq('id', id).single();
+    if (location_id && row?.organization_id) {
+        const { data: locOk } = await supabase
+            .from('locations')
+            .select('id')
+            .eq('id', location_id)
+            .eq('organization_id', row.organization_id)
+            .maybeSingle();
+        if (!locOk) {
+            throw new Error('La sede seleccionada no es válida.');
+        }
     }
 
     const { error } = await supabase.from('garments')
@@ -180,7 +237,8 @@ export async function updateGarment(formData: FormData) {
             rental_price,
             deposit_amount,
             operative_status,
-            photos_urls
+            photos_urls,
+            location_id,
         })
         .eq('id', id);
 
