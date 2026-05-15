@@ -48,9 +48,14 @@ export default async function AdminPanelLayout({ children }: { children: React.R
             </Link>
           ) : null}
           {resv ? (
-            <Link href="/admin/reservations" className="px-4 py-2 rounded-lg hover:bg-white/5 text-sm font-medium transition-colors text-muted-foreground hover:text-foreground">
-              Citas y Reservas
-            </Link>
+            <>
+              <Link href="/admin/agenda" className="px-4 py-2 rounded-lg hover:bg-white/5 text-sm font-medium transition-colors text-muted-foreground hover:text-foreground">
+                Agenda del día
+              </Link>
+              <Link href="/admin/reservations" className="px-4 py-2 rounded-lg hover:bg-white/5 text-sm font-medium transition-colors text-muted-foreground hover:text-foreground">
+                Citas y Reservas
+              </Link>
+            </>
           ) : null}
           {resvWrite ? (
             <Link href="/admin/reservations/new" className="px-4 py-2 rounded-lg hover:bg-white/5 text-sm font-medium transition-colors text-muted-foreground hover:text-foreground">
