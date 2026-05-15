@@ -41,6 +41,8 @@ export async function loginAdmin(formData: FormData) {
         redirect('/admin/login?error=cred');
     }
 
+    // En producción se usa una sola cuenta con rol administrator (ver .env.example).
+    // manager / seller existen por compatibilidad si ADMIN_ROLE los define explícitamente.
     const role = parseAdminRole(process.env.ADMIN_ROLE);
 
     let token: string;
