@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto';
 import { createAdminClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import { requireAdminSession } from '@/lib/admin-auth-server';
 
 const GARMENT_PHOTOS_BUCKET = 'garment-photos';
 const MAX_PHOTO_FILES = 12;
@@ -13,6 +14,7 @@ const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'i
 export type AdminLocationOption = { id: string; name: string; address_line: string };
 
 export async function listGarmentLocations(): Promise<AdminLocationOption[]> {
+    await requireAdminSession();
     const supabase = createAdminClient();
     const { data: org } = await supabase.from('organizations').select('id').eq('slug', 'maison-demo').single();
     if (!org) return [];
@@ -92,6 +94,7 @@ async function uploadGarmentPhotoFiles(
 }
 
 export async function createGarment(formData: FormData) {
+    await requireAdminSession();
     const supabase = createAdminClient();
 
     const name = (formData.get('name') as string)?.trim();
@@ -194,6 +197,7 @@ export async function createGarment(formData: FormData) {
 }
 
 export async function updateGarment(formData: FormData) {
+    await requireAdminSession();
     const supabase = createAdminClient();
 
     const id = formData.get('id') as string;
@@ -252,6 +256,7 @@ export async function updateGarment(formData: FormData) {
 }
 
 export async function updateReservationStatus(formData: FormData) {
+    await requireAdminSession();
     const supabase = createAdminClient();
     const id = formData.get('id') as string;
     const status = formData.get('status') as string;
