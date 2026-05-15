@@ -100,7 +100,7 @@ export function ManualReservationForm({
       <input type="hidden" name="garment_id" value={garmentId} />
 
       <p className="text-sm text-muted-foreground border border-white/10 rounded-lg px-4 py-3 bg-white/[0.02]">
-        Reserva manual sin Mercado Pago: queda en estado <span className="text-emerald-300 font-medium">confirmed</span> y
+        Reserva manual sin Mercado Pago: queda en estado <span className="text-emerald-300 font-medium">Confirmada</span> y
         bloquea las fechas en el calendario como una reserva habitual.
       </p>
 

@@ -8,21 +8,16 @@ import { formatUy } from '@/lib/utils';
 import { listGarmentLocations } from '@/lib/actions/admin';
 import { requireAdminPagePermission } from '@/lib/admin-auth-server';
 import { adminHasPermission } from '@/lib/admin-permissions';
+import {
+  labelOperativeStatus,
+  OPERATIVE_STATUS_VALUES,
+  type OperativeStatusValue,
+  isOperativeStatus,
+} from '@/lib/admin-labels';
 
 export const dynamic = 'force-dynamic';
 
 const PAGE_SIZE = 20;
-
-const OPERATIVE_STATUSES = [
-  'available',
-  'processing',
-  'in_cleaning',
-  'in_repair',
-  'reserved',
-  'retired',
-] as const;
-
-type OperativeStatus = (typeof OPERATIVE_STATUSES)[number];
 
 function escapeIlikePattern(raw: string): string {
   return raw.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
@@ -114,9 +109,7 @@ export default async function AdminGarmentsPage({
 
   const q = pickStr(searchParams.q);
   const statusRaw = pickStr(searchParams.status);
-  const status: OperativeStatus | undefined = OPERATIVE_STATUSES.includes(statusRaw as OperativeStatus)
-    ? (statusRaw as OperativeStatus)
-    : undefined;
+  const status: OperativeStatusValue | undefined = statusRaw && isOperativeStatus(statusRaw) ? statusRaw : undefined;
   const category = pickStr(searchParams.category);
   const locRaw = pickStr(searchParams.location_id);
   const location_id = z.string().uuid().safeParse(locRaw).success ? locRaw : undefined;
@@ -209,9 +202,9 @@ export default async function AdminGarmentsPage({
               className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm"
             >
               <option value="">Todos</option>
-              {OPERATIVE_STATUSES.map((s) => (
+              {OPERATIVE_STATUS_VALUES.map((s) => (
                 <option key={s} value={s}>
-                  {s}
+                  {labelOperativeStatus(s)}
                 </option>
               ))}
             </select>
@@ -264,7 +257,7 @@ export default async function AdminGarmentsPage({
                 href={chipBase({ status: '' })}
                 className="rounded-full border border-fuchsia-500/30 bg-fuchsia-500/10 px-3 py-1 text-fuchsia-200 hover:bg-fuchsia-500/20"
               >
-                Estado: {status} ×
+                Estado: {labelOperativeStatus(status)} ×
               </Link>
             ) : null}
             {q ? (
@@ -362,7 +355,7 @@ export default async function AdminGarmentsPage({
                                   : 'bg-zinc-500/20 text-zinc-300'
                           }
                         >
-                          {g.operative_status}
+                          {labelOperativeStatus(g.operative_status)}
                         </Badge>
                       </td>
                       <td className="px-6 py-4 text-right">

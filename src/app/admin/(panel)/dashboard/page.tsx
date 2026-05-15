@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdminPagePermission } from '@/lib/admin-auth-server';
+import { labelReservationStatus } from '@/lib/admin-labels';
 import { adminHasPermission } from '@/lib/admin-permissions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -184,7 +185,7 @@ export default async function AdminDashboardPage({
                     <Badge variant="outline" className="border-white/20 text-xs">SKU: {res.garments?.sku}</Badge>
                   </div>
                   <Badge className="bg-fuchsia-500/20 text-fuchsia-300 hover:bg-fuchsia-500/30">
-                    {res.status}
+                    {labelReservationStatus(res.status)}
                   </Badge>
                 </div>
               </div>

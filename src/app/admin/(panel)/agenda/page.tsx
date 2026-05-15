@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { z } from 'zod';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdminPagePermission } from '@/lib/admin-auth-server';
+import { labelReservationStatus } from '@/lib/admin-labels';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
@@ -102,7 +103,7 @@ function AgendaRowCard({ row, subtitle }: { row: AgendaRow; subtitle?: string })
         <p className="text-sm font-medium">{anon ? 'Clienta (datos anonimizados)' : name}</p>
         {!anon && phone ? <p className="text-xs text-muted-foreground">{phone}</p> : null}
         <Badge variant="outline" className={`w-fit border text-[10px] uppercase ${statusBadgeClass(row.status)}`}>
-          {row.status}
+          {labelReservationStatus(row.status)}
         </Badge>
       </div>
     </div>

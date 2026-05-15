@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { anonymizeCustomer, softDeleteCustomer, updateReservationStatus } from '@/lib/actions/admin';
 import { requireAdminPagePermission } from '@/lib/admin-auth-server';
 import { adminHasPermission } from '@/lib/admin-permissions';
+import { labelReservationStatus } from '@/lib/admin-labels';
 
 const PAGE_SIZE = 12;
 
@@ -253,7 +254,7 @@ export default async function AdminReservationsPage({
                                     : 'bg-red-500/20 text-red-300'
                           }
                         >
-                          {res.status.toUpperCase()}
+                          {labelReservationStatus(res.status)}
                         </Badge>
                       </td>
 

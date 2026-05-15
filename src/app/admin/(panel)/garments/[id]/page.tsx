@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import { listGarmentLocations, restoreGarment, softDeleteGarment, updateGarment } from '@/lib/actions/admin';
 import { getAdminSession } from '@/lib/admin-auth-server';
 import { adminHasPermission } from '@/lib/admin-permissions';
+import { labelOperativeStatus, OPERATIVE_STATUS_VALUES } from '@/lib/admin-labels';
 
 export default async function EditGarmentPage({ params }: { params: { id: string } }) {
   const session = await getAdminSession();
@@ -175,24 +176,11 @@ export default async function EditGarmentPage({ params }: { params: { id: string
                 name="operative_status"
                 className="w-full h-12 bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl px-4 outline-none transition-all text-foreground"
               >
-                <option className="text-black" value="available">
-                  Disponible (catálogo)
-                </option>
-                <option className="text-black" value="processing">
-                  Procesando post-devolución
-                </option>
-                <option className="text-black" value="in_cleaning">
-                  En tintorería
-                </option>
-                <option className="text-black" value="in_repair">
-                  En reparación
-                </option>
-                <option className="text-black" value="reserved">
-                  Reservada (uso interno)
-                </option>
-                <option className="text-black" value="retired">
-                  Retirada / baja
-                </option>
+                {OPERATIVE_STATUS_VALUES.map((s) => (
+                  <option className="text-black" key={s} value={s}>
+                    {labelOperativeStatus(s)}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
