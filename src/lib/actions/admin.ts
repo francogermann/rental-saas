@@ -5,7 +5,8 @@ import { z } from 'zod';
 import { createAdminClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { requireAdminSession } from '@/lib/admin-auth-server';
+import { requireAdminPermission } from '@/lib/admin-auth-server';
+import { insertAuditLog } from '@/lib/audit-log';
 
 const GARMENT_PHOTOS_BUCKET = 'garment-photos';
 const MAX_PHOTO_FILES = 12;
@@ -23,7 +24,7 @@ function safeReservationsRedirect(formData: FormData): string {
 }
 
 export async function listGarmentLocations(): Promise<AdminLocationOption[]> {
-    await requireAdminSession();
+    await requireAdminPermission('locations:read');
     const supabase = createAdminClient();
     const { data: org } = await supabase.from('organizations').select('id').eq('slug', 'maison-demo').single();
     if (!org) return [];
@@ -103,7 +104,7 @@ async function uploadGarmentPhotoFiles(
 }
 
 export async function createGarment(formData: FormData) {
-    await requireAdminSession();
+    const session = await requireAdminPermission('garments:write');
     const supabase = createAdminClient();
 
     const name = (formData.get('name') as string)?.trim();
@@ -201,12 +202,19 @@ export async function createGarment(formData: FormData) {
         return { error: 'No se pudieron crear las prendas. Verificá que los SKU sean únicos (base sin duplicar).' };
     }
 
+    await insertAuditLog(session, {
+        action: 'garment.create',
+        entity_type: 'garment',
+        entity_id: insertedRows[0]?.id,
+        metadata: { sku_base: skuBase, count: insertedRows.length, style_group_id },
+    });
+
     revalidatePath('/admin/garments');
     redirect('/admin/garments');
 }
 
 export async function updateGarment(formData: FormData) {
-    await requireAdminSession();
+    const session = await requireAdminPermission('garments:write');
     const supabase = createAdminClient();
 
     const id = formData.get('id') as string;
@@ -227,8 +235,18 @@ export async function updateGarment(formData: FormData) {
         throw new Error('La seña no puede ser mayor que el alquiler.');
     }
 
-    const { data: row } = await supabase.from('garments').select('organization_id').eq('id', id).single();
-    if (location_id && row?.organization_id) {
+    const { data: row } = await supabase
+        .from('garments')
+        .select('organization_id, deleted_at')
+        .eq('id', id)
+        .is('deleted_at', null)
+        .maybeSingle();
+
+    if (!row) {
+        throw new Error('La prenda no existe o está en la papelera.');
+    }
+
+    if (location_id && row.organization_id) {
         const { data: locOk } = await supabase
             .from('locations')
             .select('id')
@@ -240,7 +258,8 @@ export async function updateGarment(formData: FormData) {
         }
     }
 
-    const { error } = await supabase.from('garments')
+    const { error } = await supabase
+        .from('garments')
         .update({
             name,
             sku,
@@ -253,19 +272,27 @@ export async function updateGarment(formData: FormData) {
             photos_urls,
             location_id,
         })
-        .eq('id', id);
+        .eq('id', id)
+        .is('deleted_at', null);
 
     if (error) {
         console.error('Error updating garment:', error);
         throw new Error('No se pudieron actualizar los datos de la prenda.');
     }
 
+    await insertAuditLog(session, {
+        action: 'garment.update',
+        entity_type: 'garment',
+        entity_id: id,
+        metadata: { sku, operative_status },
+    });
+
     revalidatePath('/admin/garments');
     redirect('/admin/garments');
 }
 
 export async function updateReservationStatus(formData: FormData) {
-    await requireAdminSession();
+    const session = await requireAdminPermission('reservations:write');
     const supabase = createAdminClient();
     const id = String(formData.get('id') ?? '');
     const status = String(formData.get('status') ?? '');
@@ -274,21 +301,26 @@ export async function updateReservationStatus(formData: FormData) {
         redirect(safeReservationsRedirect(formData));
     }
 
-    const { error } = await supabase.from('reservations')
-        .update({ status })
-        .eq('id', id);
+    const { error } = await supabase.from('reservations').update({ status }).eq('id', id);
 
     if (error) {
         console.error('CRITICAL ERROR updating reservation status:', error);
         throw new Error(`No se pudo actualizar el estado: ${error.message} (${error.code})`);
     }
 
+    await insertAuditLog(session, {
+        action: 'reservation.status_update',
+        entity_type: 'reservation',
+        entity_id: id,
+        metadata: { status },
+    });
+
     revalidatePath('/admin/reservations');
     redirect(safeReservationsRedirect(formData));
 }
 
 export async function anonymizeCustomer(formData: FormData) {
-    await requireAdminSession();
+    const session = await requireAdminPermission('customers:anonymize');
     const id = String(formData.get('customer_id') ?? '');
     if (!z.string().uuid().safeParse(id).success) {
         redirect(safeReservationsRedirect(formData));
@@ -313,8 +345,111 @@ export async function anonymizeCustomer(formData: FormData) {
         throw new Error('No se pudo anonimizar los datos de la clienta.');
     }
 
+    await insertAuditLog(session, {
+        action: 'customer.anonymize',
+        entity_type: 'customer',
+        entity_id: id,
+        metadata: {},
+    });
+
     revalidatePath('/admin/reservations');
     redirect(safeReservationsRedirect(formData));
+}
+
+export async function softDeleteGarment(formData: FormData) {
+    const session = await requireAdminPermission('trash:manage');
+    const id = String(formData.get('id') ?? '');
+    if (!z.string().uuid().safeParse(id).success) {
+        redirect('/admin/garments');
+    }
+    const supabase = createAdminClient();
+    const now = new Date().toISOString();
+    const { error } = await supabase.from('garments').update({ deleted_at: now }).eq('id', id).is('deleted_at', null);
+    if (error) {
+        console.error('softDeleteGarment:', error);
+        throw new Error('No se pudo mover la prenda a la papelera.');
+    }
+    await insertAuditLog(session, {
+        action: 'garment.soft_delete',
+        entity_type: 'garment',
+        entity_id: id,
+        metadata: {},
+    });
+    revalidatePath('/admin/garments');
+    revalidatePath('/admin/trash/garments');
+    redirect('/admin/trash/garments');
+}
+
+export async function restoreGarment(formData: FormData) {
+    const session = await requireAdminPermission('trash:manage');
+    const id = String(formData.get('id') ?? '');
+    if (!z.string().uuid().safeParse(id).success) {
+        redirect('/admin/trash/garments');
+    }
+    const supabase = createAdminClient();
+    const { error } = await supabase.from('garments').update({ deleted_at: null }).eq('id', id).not('deleted_at', 'is', null);
+    if (error) {
+        console.error('restoreGarment:', error);
+        throw new Error('No se pudo restaurar la prenda.');
+    }
+    await insertAuditLog(session, {
+        action: 'garment.restore',
+        entity_type: 'garment',
+        entity_id: id,
+        metadata: {},
+    });
+    revalidatePath('/admin/garments');
+    revalidatePath('/admin/trash/garments');
+    redirect('/admin/garments');
+}
+
+export async function softDeleteCustomer(formData: FormData) {
+    const session = await requireAdminPermission('trash:manage');
+    const id = String(formData.get('id') ?? '');
+    if (!z.string().uuid().safeParse(id).success) {
+        redirect('/admin/trash/customers');
+    }
+    const supabase = createAdminClient();
+    const now = new Date().toISOString();
+    const { error } = await supabase.from('customers').update({ deleted_at: now }).eq('id', id).is('deleted_at', null);
+    if (error) {
+        console.error('softDeleteCustomer:', error);
+        throw new Error('No se pudo mover la clienta a la papelera.');
+    }
+    await insertAuditLog(session, {
+        action: 'customer.soft_delete',
+        entity_type: 'customer',
+        entity_id: id,
+        metadata: {},
+    });
+    revalidatePath('/admin/trash/customers');
+    redirect('/admin/trash/customers');
+}
+
+export async function restoreCustomer(formData: FormData) {
+    const session = await requireAdminPermission('trash:manage');
+    const id = String(formData.get('id') ?? '');
+    if (!z.string().uuid().safeParse(id).success) {
+        redirect('/admin/trash/customers');
+    }
+    const supabase = createAdminClient();
+    const { error } = await supabase
+        .from('customers')
+        .update({ deleted_at: null })
+        .eq('id', id)
+        .not('deleted_at', 'is', null);
+    if (error) {
+        console.error('restoreCustomer:', error);
+        throw new Error('No se pudo restaurar la clienta.');
+    }
+    await insertAuditLog(session, {
+        action: 'customer.restore',
+        entity_type: 'customer',
+        entity_id: id,
+        metadata: {},
+    });
+    revalidatePath('/admin/trash/customers');
+    redirect('/admin/trash/customers');
 }
 
 const manualReservationDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha inválido');
@@ -327,7 +462,7 @@ export async function createManualReservation(
     _prev: ManualReservationFormState,
     formData: FormData,
 ): Promise<ManualReservationFormState> {
-    await requireAdminSession();
+    const session = await requireAdminPermission('reservations:write');
     const supabase = createAdminClient();
 
     const eventRaw = String(formData.get('event_date') ?? '').trim();
@@ -371,6 +506,17 @@ export async function createManualReservation(
 
     if (orgErr || !org) {
         return { error: 'Organización no encontrada.' };
+    }
+
+    const { data: garmentOk } = await supabase
+        .from('garments')
+        .select('id')
+        .eq('id', garment_id)
+        .eq('organization_id', org.id)
+        .is('deleted_at', null)
+        .maybeSingle();
+    if (!garmentOk) {
+        return { error: 'La prenda no está disponible o fue movida a la papelera.' };
     }
 
     const customerMode = String(formData.get('customer_mode') ?? 'registered').trim() === 'walk_in' ? 'walk_in' : 'registered';
@@ -429,9 +575,10 @@ export async function createManualReservation(
             .select('id')
             .eq('id', cid)
             .eq('organization_id', org.id)
+            .is('deleted_at', null)
             .maybeSingle();
         if (custErr || !custOk) {
-            return { error: 'La clienta seleccionada no es válida.' };
+            return { error: 'La clienta seleccionada no es válida o está en la papelera.' };
         }
         customer_id = custOk.id;
     }
@@ -457,7 +604,7 @@ export async function createManualReservation(
     const reservationNotes = String(formData.get('reservation_notes') ?? '').trim();
     const p_notes = reservationNotes.length > 0 ? reservationNotes : null;
 
-    const { error: rpcError } = await supabase.rpc('create_reservation_with_block_for_org', {
+    const { data: rpcData, error: rpcError } = await supabase.rpc('create_reservation_with_block_for_org', {
         p_organization_id: org.id,
         p_garment_id: garment_id,
         p_customer_id: customer_id,
@@ -475,6 +622,23 @@ export async function createManualReservation(
         console.error('createManualReservation RPC:', rpcError);
         return { error: rpcError.message || 'No se pudo crear la reserva.' };
     }
+
+    let reservationId: string | null = null;
+    if (
+        rpcData &&
+        typeof rpcData === 'object' &&
+        'reservation_id' in rpcData &&
+        typeof (rpcData as { reservation_id: unknown }).reservation_id === 'string'
+    ) {
+        reservationId = (rpcData as { reservation_id: string }).reservation_id;
+    }
+
+    await insertAuditLog(session, {
+        action: 'reservation.create_manual',
+        entity_type: 'reservation',
+        entity_id: reservationId,
+        metadata: { garment_id, customer_id, pickup_date, return_date },
+    });
 
     revalidatePath('/admin/reservations');
     revalidatePath('/admin/reservations/new');

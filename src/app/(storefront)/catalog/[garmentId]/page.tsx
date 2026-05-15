@@ -29,6 +29,7 @@ export default async function GarmentDetailPage({
       locations!garments_location_id_fkey(name, address_line)
     `)
     .eq('id', params.garmentId)
+    .is('deleted_at', null)
     .single();
 
   if (error || !data) {

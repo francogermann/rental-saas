@@ -1,9 +1,29 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import Link from 'next/link';
 import { createAdminClient } from '@/lib/supabase/server';
+import { requireAdminPagePermission } from '@/lib/admin-auth-server';
+import { adminHasPermission } from '@/lib/admin-permissions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
-export default async function AdminDashboardPage() {
+type UpcomingReservationRow = {
+  id: string;
+  pickup_date: string;
+  status: string;
+  customers: { first_name: string; last_name: string; phone: string | null } | null;
+  garments: { name: string; sku: string } | null;
+};
+
+export default async function AdminDashboardPage({
+  searchParams,
+}: {
+  searchParams: Record<string, string | string[] | undefined>;
+}) {
+  const session = await requireAdminPagePermission('dashboard:view');
+  const canWriteGarments = adminHasPermission(session.role, 'garments:write');
+  const canWriteRes = adminHasPermission(session.role, 'reservations:write');
+
+  const forbidden = typeof searchParams.error === 'string' && searchParams.error === 'forbidden';
+
   const supabase = createAdminClient();
 
   // Basic stats for MVP (Current month)
@@ -12,9 +32,12 @@ export default async function AdminDashboardPage() {
     { count: totalReservations },
     { count: pendingDeliveries },
   ] = await Promise.all([
-    supabase.from('garments').select('*', { count: 'exact', head: true }),
+    supabase.from('garments').select('*', { count: 'exact', head: true }).is('deleted_at', null),
     supabase.from('reservations').select('*', { count: 'exact', head: true }),
-    supabase.from('reservations').select('*', { count: 'exact', head: true }).in('status', ['confirmed', 'paid']),
+    supabase
+      .from('reservations')
+      .select('*', { count: 'exact', head: true })
+      .in('status', ['confirmed', 'paid']),
   ]);
 
   // Active reservations for today/this week to show as immediate action items
@@ -33,22 +56,40 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
-      
+      {forbidden ? (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+          No tenés permiso para acceder a esa sección. Si necesitás otro rol, contactá al administrador.
+        </div>
+      ) : null}
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="font-admin-display text-4xl font-bold tracking-tight">Tablero General</h1>
           <p className="text-muted-foreground mt-1">Resumen de operaciones de Carpe Diem.</p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <a href="/admin/garments" className="bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-lg px-4 py-2 text-sm font-semibold transition-colors">
+          <Link
+            href="/admin/garments"
+            className="bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
+          >
             Gestionar Prendas
-          </a>
-          <a href="/admin/reservations/new" className="bg-white/5 border border-fuchsia-500/30 hover:bg-fuchsia-500/10 text-fuchsia-200 rounded-lg px-4 py-2 text-sm font-semibold transition-colors">
-            + Reserva manual
-          </a>
-          <a href="/admin/garments/new" className="bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white rounded-lg px-4 py-2 text-sm font-semibold transition-all shadow-glow">
-            + Nueva Prenda
-          </a>
+          </Link>
+          {canWriteRes ? (
+            <Link
+              href="/admin/reservations/new"
+              className="bg-white/5 border border-fuchsia-500/30 hover:bg-fuchsia-500/10 text-fuchsia-200 rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
+            >
+              + Reserva manual
+            </Link>
+          ) : null}
+          {canWriteGarments ? (
+            <Link
+              href="/admin/garments/new"
+              className="bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white rounded-lg px-4 py-2 text-sm font-semibold transition-all shadow-glow"
+            >
+              + Nueva Prenda
+            </Link>
+          ) : null}
         </div>
       </div>
 
@@ -103,7 +144,7 @@ export default async function AdminDashboardPage() {
           </div>
         ) : (
           <div className="divide-y divide-white/5">
-            {upcomingReservations.map((res: any) => (
+            {(upcomingReservations as UpcomingReservationRow[]).map((res) => (
               <div key={res.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/[0.01] hover:bg-white/[0.03] transition-colors">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                   <div className="bg-white/5 border border-white/10 rounded-xl p-3 text-center min-w-24">

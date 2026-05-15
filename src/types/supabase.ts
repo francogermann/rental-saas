@@ -21,6 +21,7 @@ export type Database = {
           blocked_at: string | null
           blocked_by: string | null
           created_at: string
+          deleted_at: string | null
           email: string
           first_name: string
           id: string
@@ -42,6 +43,7 @@ export type Database = {
           blocked_at?: string | null
           blocked_by?: string | null
           created_at?: string
+          deleted_at?: string | null
           email: string
           first_name: string
           id?: string
@@ -63,6 +65,7 @@ export type Database = {
           blocked_at?: string | null
           blocked_by?: string | null
           created_at?: string
+          deleted_at?: string | null
           email?: string
           first_name?: string
           id?: string
@@ -87,6 +90,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          actor_role: string
+          actor_username: string
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          metadata: Json
+        }
+        Insert: {
+          action: string
+          actor_role: string
+          actor_username: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          metadata?: Json
+        }
+        Update: {
+          action?: string
+          actor_role?: string
+          actor_username?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          metadata?: Json
+        }
+        Relationships: []
       }
       garment_blocks: {
         Row: {
@@ -194,6 +230,7 @@ export type Database = {
           category: string | null
           chest_cm: number | null
           created_at: string
+          deleted_at: string | null
           deposit_amount: number
           description: string | null
           hip_cm: number | null
@@ -218,6 +255,7 @@ export type Database = {
           category?: string | null
           chest_cm?: number | null
           created_at?: string
+          deleted_at?: string | null
           deposit_amount?: number
           description?: string | null
           hip_cm?: number | null
@@ -242,6 +280,7 @@ export type Database = {
           category?: string | null
           chest_cm?: number | null
           created_at?: string
+          deleted_at?: string | null
           deposit_amount?: number
           description?: string | null
           hip_cm?: number | null

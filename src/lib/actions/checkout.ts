@@ -48,6 +48,7 @@ export async function processCheckout(formData: FormData) {
       .from('garments')
       .select('name, rental_price, deposit_amount, location_id')
       .eq('id', garmentId)
+      .is('deleted_at', null)
       .single();
 
   if (garmentError || !garment) {
@@ -67,6 +68,7 @@ export async function processCheckout(formData: FormData) {
       .select('id')
       .eq('email', email)
       .eq('organization_id', orgId)
+      .is('deleted_at', null)
       .single();
 
   if (existCustomer) {
@@ -199,6 +201,7 @@ export async function processCartCheckout(formData: FormData) {
       .select('id')
       .eq('email', email)
       .eq('organization_id', orgId)
+      .is('deleted_at', null)
       .single();
 
   if (existCustomer) {
@@ -238,6 +241,7 @@ export async function processCartCheckout(formData: FormData) {
       .from('garments')
       .select('name, rental_price, deposit_amount, location_id')
       .eq('id', item.garment.id)
+      .is('deleted_at', null)
       .single();
       
     if (garmentError || !garment) {

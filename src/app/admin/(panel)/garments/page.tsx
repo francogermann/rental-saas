@@ -5,6 +5,8 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { Badge } from '@/components/ui/badge';
 import { formatUy } from '@/lib/utils';
 import { listGarmentLocations } from '@/lib/actions/admin';
+import { requireAdminPagePermission } from '@/lib/admin-auth-server';
+import { adminHasPermission } from '@/lib/admin-permissions';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,9 +65,10 @@ function applyGarmentFilters<
   T extends {
     eq: (c: string, v: string) => T;
     or: (s: string) => T;
+    is: (c: string, v: null) => T;
   },
 >(query: T, orgId: string, filters: { q?: string; status?: string; category?: string; location_id?: string }): T {
-  let q = query.eq('organization_id', orgId);
+  let q = query.eq('organization_id', orgId).is('deleted_at', null);
   if (filters.status) q = q.eq('operative_status', filters.status);
   if (filters.category) q = q.eq('category', filters.category);
   if (filters.location_id) q = q.eq('location_id', filters.location_id);
@@ -99,6 +102,7 @@ export default async function AdminGarmentsPage({
 }: {
   searchParams: Record<string, string | string[] | undefined>;
 }) {
+  const session = await requireAdminPagePermission('garments:read');
   const supabase = createAdminClient();
 
   const { data: org, error: orgErr } = await supabase.from('organizations').select('id').eq('slug', 'maison-demo').single();
@@ -122,7 +126,13 @@ export default async function AdminGarmentsPage({
   const filters = { q, status, category, location_id };
 
   const [{ data: catRows }, locations] = await Promise.all([
-    supabase.from('garments').select('category').eq('organization_id', org.id).not('category', 'is', null).limit(2000),
+    supabase
+      .from('garments')
+      .select('category')
+      .eq('organization_id', org.id)
+      .is('deleted_at', null)
+      .not('category', 'is', null)
+      .limit(2000),
     listGarmentLocations(),
   ]);
 
@@ -168,9 +178,14 @@ export default async function AdminGarmentsPage({
           <h1 className="font-admin-display text-4xl font-bold tracking-tight">Catálogo de Prendas</h1>
           <p className="text-muted-foreground mt-1">Gestiona el inventario, precios y estados.</p>
         </div>
-        <a href="/admin/garments/new" className="bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white rounded-lg px-6 py-2 text-sm font-semibold transition-all shadow-glow flex items-center justify-center">
-          + Agregar Prenda
-        </a>
+        {adminHasPermission(session.role, 'garments:write') ? (
+          <a
+            href="/admin/garments/new"
+            className="bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white rounded-lg px-6 py-2 text-sm font-semibold transition-all shadow-glow flex items-center justify-center"
+          >
+            + Agregar Prenda
+          </a>
+        ) : null}
       </div>
 
       <form method="GET" className="rounded-2xl border border-white/5 bg-white/[0.02] p-4 space-y-4">
@@ -350,12 +365,16 @@ export default async function AdminGarmentsPage({
                         </Badge>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <a
-                          href={`/admin/garments/${g.id}`}
-                          className="text-fuchsia-400 hover:text-fuchsia-300 font-semibold text-xs uppercase tracking-widest"
-                        >
-                          Editar
-                        </a>
+                        {adminHasPermission(session.role, 'garments:write') ? (
+                          <a
+                            href={`/admin/garments/${g.id}`}
+                            className="text-fuchsia-400 hover:text-fuchsia-300 font-semibold text-xs uppercase tracking-widest"
+                          >
+                            Editar
+                          </a>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
                       </td>
                     </tr>
                   );

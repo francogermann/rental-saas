@@ -203,6 +203,7 @@ export async function createReservation(
         .from('garments')
         .select('organization_id, location_id')
         .eq('id', garmentId)
+        .is('deleted_at', null)
         .single();
 
     if (gErr || !garment) {

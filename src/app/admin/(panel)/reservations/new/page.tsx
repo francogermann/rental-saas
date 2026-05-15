@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { z } from 'zod';
 import { createAdminClient } from '@/lib/supabase/server';
 import { ManualReservationForm } from './ManualReservationForm';
+import { requireAdminPagePermission } from '@/lib/admin-auth-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +21,7 @@ export default async function AdminNewReservationPage({
 }: {
   searchParams: Record<string, string | string[] | undefined>;
 }) {
+  await requireAdminPagePermission('reservations:write');
   const supabase = createAdminClient();
   const { data: org, error: orgErr } = await supabase.from('organizations').select('id').eq('slug', 'maison-demo').single();
 
@@ -59,6 +61,7 @@ export default async function AdminNewReservationPage({
     .from('customers')
     .select('id, first_name, last_name, email')
     .eq('organization_id', org.id)
+    .is('deleted_at', null)
     .order('last_name', { ascending: true })
     .limit(200);
 
@@ -82,6 +85,7 @@ export default async function AdminNewReservationPage({
     `,
     )
     .eq('organization_id', org.id)
+    .is('deleted_at', null)
     .eq('operative_status', 'available')
     .order('name', { ascending: true })
     .limit(500);

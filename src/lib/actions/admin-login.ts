@@ -3,6 +3,7 @@
 import { createHash, timingSafeEqual } from 'crypto';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { parseAdminRole } from '@/lib/admin-role';
 import { ADMIN_SESSION_COOKIE, signAdminSession } from '@/lib/admin-session';
 
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
@@ -40,9 +41,11 @@ export async function loginAdmin(formData: FormData) {
         redirect('/admin/login?error=cred');
     }
 
+    const role = parseAdminRole(process.env.ADMIN_ROLE);
+
     let token: string;
     try {
-        token = await signAdminSession(username);
+        token = await signAdminSession(username, role);
     } catch {
         redirect('/admin/login?error=config');
     }

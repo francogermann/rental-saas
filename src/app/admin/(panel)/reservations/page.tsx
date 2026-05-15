@@ -2,7 +2,9 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { createAdminClient } from '@/lib/supabase/server';
 import { Badge } from '@/components/ui/badge';
-import { anonymizeCustomer, updateReservationStatus } from '@/lib/actions/admin';
+import { anonymizeCustomer, softDeleteCustomer, updateReservationStatus } from '@/lib/actions/admin';
+import { requireAdminPagePermission } from '@/lib/admin-auth-server';
+import { adminHasPermission } from '@/lib/admin-permissions';
 
 const PAGE_SIZE = 12;
 
@@ -101,6 +103,11 @@ export default async function AdminReservationsPage({
   const view = normalizeView(typeof searchParams.view === 'string' ? searchParams.view : undefined);
   const pageRaw = typeof searchParams.page === 'string' ? parseInt(searchParams.page, 10) : 1;
   const page = Number.isFinite(pageRaw) && pageRaw > 0 ? pageRaw : 1;
+
+  const session = await requireAdminPagePermission('reservations:read');
+  const canResWrite = adminHasPermission(session.role, 'reservations:write');
+  const canAnon = adminHasPermission(session.role, 'customers:anonymize');
+  const canTrashCust = adminHasPermission(session.role, 'trash:manage');
 
   const supabase = createAdminClient();
   const today = todayIso();
@@ -251,34 +258,38 @@ export default async function AdminReservationsPage({
 
                       <td className="px-6 py-4 text-right">
                         <div className="inline-flex flex-col items-end gap-2">
-                          <form action={updateReservationStatus} className="inline-flex gap-2">
-                            <input type="hidden" name="id" value={res.id} />
-                            <input type="hidden" name="next" value={currentListPath} />
-                            {res.status === 'confirmed' || res.status === 'paid' ? (
-                              <button
-                                type="submit"
-                                name="status"
-                                value="delivered"
-                                className="text-xs font-bold uppercase tracking-widest text-white bg-fuchsia-600 hover:bg-fuchsia-500 px-3 py-1.5 rounded-lg transition-colors"
-                              >
-                                Marcar entregada
-                              </button>
-                            ) : res.status === 'delivered' ? (
-                              <button
-                                type="submit"
-                                name="status"
-                                value="returned"
-                                className="text-xs font-bold uppercase tracking-widest text-white bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded-lg transition-colors"
-                              >
-                                Registrar devolución
-                              </button>
-                            ) : (
-                              <span className="text-xs text-muted-foreground uppercase opacity-50 block w-[160px] text-center">
-                                Sin acción rápida
-                              </span>
-                            )}
-                          </form>
-                          {cust?.id && !anon && (
+                          {canResWrite ? (
+                            <form action={updateReservationStatus} className="inline-flex gap-2">
+                              <input type="hidden" name="id" value={res.id} />
+                              <input type="hidden" name="next" value={currentListPath} />
+                              {res.status === 'confirmed' || res.status === 'paid' ? (
+                                <button
+                                  type="submit"
+                                  name="status"
+                                  value="delivered"
+                                  className="text-xs font-bold uppercase tracking-widest text-white bg-fuchsia-600 hover:bg-fuchsia-500 px-3 py-1.5 rounded-lg transition-colors"
+                                >
+                                  Marcar entregada
+                                </button>
+                              ) : res.status === 'delivered' ? (
+                                <button
+                                  type="submit"
+                                  name="status"
+                                  value="returned"
+                                  className="text-xs font-bold uppercase tracking-widest text-white bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded-lg transition-colors"
+                                >
+                                  Registrar devolución
+                                </button>
+                              ) : (
+                                <span className="text-xs text-muted-foreground uppercase opacity-50 block w-[160px] text-center">
+                                  Sin acción rápida
+                                </span>
+                              )}
+                            </form>
+                          ) : (
+                            <span className="text-xs text-muted-foreground uppercase opacity-50">Solo lectura</span>
+                          )}
+                          {cust?.id && !anon && canAnon ? (
                             <form action={anonymizeCustomer} className="inline-block">
                               <input type="hidden" name="customer_id" value={cust.id} />
                               <input type="hidden" name="next" value={currentListPath} />
@@ -289,7 +300,18 @@ export default async function AdminReservationsPage({
                                 Anonimizar datos personales
                               </button>
                             </form>
-                          )}
+                          ) : null}
+                          {cust?.id && !anon && canTrashCust ? (
+                            <form action={softDeleteCustomer} className="inline-block">
+                              <input type="hidden" name="id" value={cust.id} />
+                              <button
+                                type="submit"
+                                className="text-[10px] uppercase tracking-widest text-zinc-500 hover:text-red-300 underline-offset-2 hover:underline"
+                              >
+                                Mover clienta a papelera
+                              </button>
+                            </form>
+                          ) : null}
                         </div>
                       </td>
                     </tr>
