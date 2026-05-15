@@ -1,13 +1,35 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { z } from 'zod';
 import type { GarmentSummary } from '@/types/domain';
 
 export type CartItem = {
   garment: GarmentSummary;
   pickupDate: string;
   returnDate: string;
+  /** Sede de retiro elegida en el catálogo; debe coincidir con garment.location_id en checkout. */
+  pickupLocationId: string;
 };
+
+function normalizeCartItems(raw: unknown): CartItem[] {
+  if (!Array.isArray(raw)) return [];
+  const uuid = z.string().uuid();
+  return raw
+    .filter((i) => i && typeof i === 'object' && 'garment' in i)
+    .map((i) => {
+      const row = i as Record<string, unknown>;
+      const garment = row.garment as GarmentSummary;
+      const pickupDate = String(row.pickupDate ?? '');
+      const returnDate = String(row.returnDate ?? '');
+      let pickupLocationId = typeof row.pickupLocationId === 'string' ? row.pickupLocationId : '';
+      if (!uuid.safeParse(pickupLocationId).success && typeof garment?.location_id === 'string') {
+        pickupLocationId = garment.location_id;
+      }
+      return { garment, pickupDate, returnDate, pickupLocationId };
+    })
+    .filter((i) => uuid.safeParse(i.pickupLocationId).success && i.pickupDate && i.returnDate);
+}
 
 interface CartContextType {
   items: CartItem[];
@@ -33,7 +55,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const saved = localStorage.getItem('carpediem_cart');
     if (saved) {
       try {
-        setItems(JSON.parse(saved));
+        setItems(normalizeCartItems(JSON.parse(saved)));
       } catch (e) {
         console.error('Failed to parse cart', e);
       }

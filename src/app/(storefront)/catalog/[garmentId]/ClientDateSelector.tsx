@@ -8,9 +8,10 @@ import type { GarmentSummary } from '@/types/domain';
 
 interface ClientDateSelectorProps {
   garment: GarmentSummary;
+  pickupLocationId: string;
 }
 
-export default function ClientDateSelector({ garment }: ClientDateSelectorProps) {
+export default function ClientDateSelector({ garment, pickupLocationId }: ClientDateSelectorProps) {
   const { addItem } = useCart();
   const [selectedRange, setSelectedRange] = useState<{ pickupDate: string; returnDate: string } | null>(null);
 
@@ -20,6 +21,7 @@ export default function ClientDateSelector({ garment }: ClientDateSelectorProps)
       garment: garment,
       pickupDate: selectedRange.pickupDate,
       returnDate: selectedRange.returnDate,
+      pickupLocationId,
     });
   };
 
