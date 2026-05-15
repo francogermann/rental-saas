@@ -86,7 +86,7 @@ export default function ClientDateSelector({
               A abonar hoy:
             </span>
             <span className="bg-gradient-to-r from-fuchsia-400 to-purple-400 bg-clip-text text-xl font-extrabold text-transparent sm:text-2xl">
-              {formatUy((garment.rental_price || 0) + (garment.deposit_amount || 0))}
+              {formatUy(garment.deposit_amount || 0)}
             </span>
           </div>
 

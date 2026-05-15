@@ -88,7 +88,7 @@ export default async function CheckoutPage({
     locName = pickupLoc.name;
   }
 
-  const totalAmount = (garment.rental_price || 0) + (garment.deposit_amount || 0);
+  const payTodayAmount = garment.deposit_amount || 0;
 
   return (
     <div className="min-h-screen">
@@ -203,19 +203,19 @@ export default async function CheckoutPage({
 
               <div className="space-y-3 text-sm border-t border-white/10 pt-4">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Alquiler</span>
+                  <span className="text-muted-foreground">Alquiler (al retiro)</span>
                   <span>{formatUy(garment.rental_price)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Depósito (Reembolsable)</span>
+                  <span className="text-muted-foreground">Seña / garantía (reembolsable)</span>
                   <span>{formatUy(garment.deposit_amount)}</span>
                 </div>
               </div>
 
               <div className="flex justify-between font-bold text-lg border-t border-white/10 pt-4 mt-4">
-                <span>Total</span>
+                <span>A abonar hoy</span>
                 <span className="bg-gradient-to-r from-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
-                  {formatUy(totalAmount)}
+                  {formatUy(payTodayAmount)}
                 </span>
               </div>
             </div>

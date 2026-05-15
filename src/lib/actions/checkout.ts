@@ -53,7 +53,7 @@ export async function processCheckout(formData: FormData) {
     redirect(`/catalog/${garmentId}?error=Sede+no+coincide+con+la+prenda`);
   }
 
-  const totalAmount = (garment.rental_price || 0) + (garment.deposit_amount || 0);
+  const payTodayAmount = garment.deposit_amount || 0;
 
   const customerResult = await findOrCreateCheckoutCustomer(supabase, authSupabase, {
     orgId,
@@ -95,7 +95,7 @@ export async function processCheckout(formData: FormData) {
         {
           id: garmentId,
           title: `Alquiler: ${garment.name}`,
-          unit_price: totalAmount,
+          unit_price: payTodayAmount,
         },
       ],
       statementDescriptor: 'MAISON RENTALS',
@@ -176,7 +176,7 @@ export async function processCartCheckout(formData: FormData) {
       };
     }
 
-    const itemTotal = (garment.rental_price || 0) + (garment.deposit_amount || 0);
+    const payTodayAmount = garment.deposit_amount || 0;
 
     const reserveResult = await createReservation({
       garmentId: item.garment.id,
@@ -197,7 +197,7 @@ export async function processCartCheckout(formData: FormData) {
     preferenceItems.push({
       id: item.garment.id,
       title: `Alquiler: ${garment.name}`,
-      unit_price: itemTotal,
+      unit_price: payTodayAmount,
     });
   }
 

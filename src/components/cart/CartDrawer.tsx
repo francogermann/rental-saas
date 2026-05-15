@@ -131,7 +131,7 @@ export function CartDrawer() {
               </div>
               <div className="flex justify-between text-lg font-bold pt-2 border-t border-white/10">
                 <span>Total a pagar hoy</span>
-                <span className="text-fuchsia-400">{formatUy(totalSubtotal + totalDeposit)}</span>
+                <span className="text-fuchsia-400">{formatUy(totalDeposit)}</span>
               </div>
             </div>
 

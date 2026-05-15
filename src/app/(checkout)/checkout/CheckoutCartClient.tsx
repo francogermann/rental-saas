@@ -261,8 +261,8 @@ export function CheckoutCartClient({ submitLabel, paymentHint }: Props) {
                   <span>{formatUy(totalDeposit)}</span>
                 </div>
                 <div className="flex justify-between text-xl font-display font-bold pt-4 border-t border-white/10">
-                  <span>Total</span>
-                  <span className="text-fuchsia-400">{formatUy(totalSubtotal + totalDeposit)}</span>
+                  <span>A abonar hoy</span>
+                  <span className="text-fuchsia-400">{formatUy(totalDeposit)}</span>
                 </div>
               </div>
             </div>
