@@ -42,10 +42,10 @@ export default async function DashboardFavoritesPage() {
   const favorites = [...garments].sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
 
   return (
-    <div className="container mx-auto max-w-5xl px-6 py-24">
-      <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
+    <div className="container mx-auto max-w-5xl px-4 sm:px-6 py-16 sm:py-24">
+      <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
         <div>
-          <h1 className="font-display text-4xl font-bold tracking-tight">Favoritos</h1>
+          <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">Favoritos</h1>
           <p className="mt-1 text-muted-foreground">Tus prendas guardadas</p>
         </div>
         <Link href="/dashboard" className="text-sm text-fuchsia-400 hover:text-fuchsia-300">

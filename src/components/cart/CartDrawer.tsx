@@ -80,7 +80,7 @@ export function CartDrawer() {
                 {/* Remove button */}
                 <button 
                   onClick={() => removeItem(item.garment.id)}
-                  className="absolute top-4 right-4 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute top-4 right-4 text-muted-foreground hover:text-destructive opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                   title="Eliminar"
                 >
                   ✕

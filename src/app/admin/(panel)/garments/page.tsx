@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { AdminTableScroll } from '@/components/admin/AdminTableScroll';
 import { z } from 'zod';
 import { createAdminClient } from '@/lib/supabase/server';
 import { Badge } from '@/components/ui/badge';
@@ -108,7 +109,7 @@ export default async function AdminGarmentsPage({
   const { data: org, error: orgErr } = await supabase.from('organizations').select('id').eq('slug', 'maison-demo').single();
 
   if (orgErr || !org) {
-    return <div className="p-8 text-red-500">No se encontró la organización demo.</div>;
+    return <div className="p-4 sm:p-6 lg:p-8 text-red-500">No se encontró la organización demo.</div>;
   }
 
   const q = pickStr(searchParams.q);
@@ -157,7 +158,7 @@ export default async function AdminGarmentsPage({
   const { data: garments, error } = await dataQuery.range(from, to);
 
   if (error) {
-    return <div className="p-8 text-red-500">Error cargando las prendas: {error.message}</div>;
+    return <div className="p-4 sm:p-6 lg:p-8 text-red-500">Error cargando las prendas: {error.message}</div>;
   }
 
   const rows = (garments ?? []) as GarmentListRow[];
@@ -172,10 +173,10 @@ export default async function AdminGarmentsPage({
     });
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="font-admin-display text-4xl font-bold tracking-tight">Catálogo de Prendas</h1>
+          <h1 className="font-admin-display text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">Catálogo de Prendas</h1>
           <p className="text-muted-foreground mt-1">Gestiona el inventario, precios y estados.</p>
         </div>
         {adminHasPermission(session.role, 'garments:write') ? (
@@ -189,8 +190,8 @@ export default async function AdminGarmentsPage({
       </div>
 
       <form method="GET" className="rounded-2xl border border-white/5 bg-white/[0.02] p-4 space-y-4">
-        <div className="flex flex-col lg:flex-row gap-4 lg:items-end flex-wrap">
-          <div className="flex-1 min-w-[200px] space-y-1">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+          <div className="flex-1 w-full sm:min-w-[160px] space-y-1">
             <label className="text-[10px] uppercase tracking-widest text-muted-foreground">Buscar nombre o SKU</label>
             <input
               type="search"
@@ -200,7 +201,7 @@ export default async function AdminGarmentsPage({
               className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm"
             />
           </div>
-          <div className="min-w-[160px] space-y-1">
+          <div className="w-full sm:min-w-[160px] space-y-1">
             <label className="text-[10px] uppercase tracking-widest text-muted-foreground">Estado operativo</label>
             <select
               name="status"
@@ -215,7 +216,7 @@ export default async function AdminGarmentsPage({
               ))}
             </select>
           </div>
-          <div className="min-w-[160px] space-y-1">
+          <div className="w-full sm:min-w-[160px] space-y-1">
             <label className="text-[10px] uppercase tracking-widest text-muted-foreground">Categoría</label>
             <select
               name="category"
@@ -230,7 +231,7 @@ export default async function AdminGarmentsPage({
               ))}
             </select>
           </div>
-          <div className="min-w-[180px] space-y-1">
+          <div className="w-full sm:min-w-[160px] space-y-1">
             <label className="text-[10px] uppercase tracking-widest text-muted-foreground">Sede</label>
             <select
               name="location_id"
@@ -290,8 +291,8 @@ export default async function AdminGarmentsPage({
       </p>
 
       <div className="bg-white/[0.02] backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm whitespace-nowrap">
+        <AdminTableScroll>
+          <table className="w-full min-w-[640px] text-left text-sm whitespace-nowrap">
             <thead className="bg-white/[0.03] border-b border-white/5 text-xs uppercase tracking-widest text-muted-foreground">
               <tr>
                 <th className="px-6 py-4 font-semibold">Prenda / SKU</th>
@@ -382,7 +383,7 @@ export default async function AdminGarmentsPage({
               )}
             </tbody>
           </table>
-        </div>
+        </AdminTableScroll>
       </div>
 
       {totalPages > 1 && (

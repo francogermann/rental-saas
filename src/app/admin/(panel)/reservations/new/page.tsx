@@ -26,7 +26,7 @@ export default async function AdminNewReservationPage({
   const { data: org, error: orgErr } = await supabase.from('organizations').select('id').eq('slug', 'maison-demo').single();
 
   if (orgErr || !org) {
-    return <div className="p-8 text-red-400">No se encontró la organización demo.</div>;
+    return <div className="p-4 sm:p-6 lg:p-8 text-red-400">No se encontró la organización demo.</div>;
   }
 
   const { data: locRows } = await supabase
@@ -41,7 +41,7 @@ export default async function AdminNewReservationPage({
 
   if (locations.length === 0) {
     return (
-      <div className="p-8 max-w-2xl mx-auto text-center text-muted-foreground">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto text-center text-muted-foreground">
         No hay sedes configuradas en la organización. Configurá sedes antes de crear reservas manuales.
       </div>
     );
@@ -105,7 +105,7 @@ export default async function AdminNewReservationPage({
   ]);
 
   if (cErr || gErr) {
-    return <div className="p-8 text-red-400">Error cargando datos: {cErr?.message || gErr?.message}</div>;
+    return <div className="p-4 sm:p-6 lg:p-8 text-red-400">Error cargando datos: {cErr?.message || gErr?.message}</div>;
   }
 
   const today = new Date().toISOString().slice(0, 10);
@@ -145,10 +145,10 @@ export default async function AdminNewReservationPage({
   })();
 
   return (
-    <div className="p-8 max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-admin-display text-4xl font-bold tracking-tight">Nueva reserva manual</h1>
+          <h1 className="font-admin-display text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">Nueva reserva manual</h1>
           <p className="text-muted-foreground mt-1">Alta operativa sin cobro online (Mercado Pago).</p>
         </div>
         <Link

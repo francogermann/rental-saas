@@ -178,7 +178,7 @@ export default async function AdminAgendaPage({
 
   const err = pickupsRes.error ?? returnsRes.error ?? eventsRes.error;
   if (err) {
-    return <div className="p-8 text-red-500">Error cargando agenda: {err.message}</div>;
+    return <div className="p-4 sm:p-6 lg:p-8 text-red-500">Error cargando agenda: {err.message}</div>;
   }
 
   const pickups = (pickupsRes.data ?? []) as AgendaRow[];
@@ -186,10 +186,10 @@ export default async function AdminAgendaPage({
   const events = (eventsRes.data ?? []) as AgendaRow[];
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8 p-8 animate-in fade-in duration-500">
+    <div className="mx-auto max-w-5xl space-y-8 p-4 sm:p-6 lg:p-8 animate-in fade-in duration-500">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="font-admin-display text-4xl font-bold tracking-tight">Agenda del día</h1>
+          <h1 className="font-admin-display text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">Agenda del día</h1>
           <p className="mt-1 max-w-2xl text-muted-foreground">
             Retiros a preparar, devoluciones previstas y eventos cargados para la fecha elegida. Misma base que{' '}
             <Link href="/admin/reservations" className="text-fuchsia-400 hover:text-fuchsia-300">

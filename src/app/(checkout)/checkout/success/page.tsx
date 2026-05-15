@@ -2,7 +2,7 @@
 
 export default function CheckoutSuccessPage({ searchParams }: { searchParams: { ref?: string } }) {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center animate-in fade-in zoom-in duration-700">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-6 sm:p-6 text-center animate-in fade-in zoom-in duration-700 max-w-lg mx-auto w-full">
       <div className="w-20 h-20 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center text-4xl mb-8 shadow-[0_0_50px_rgba(16,185,129,0.3)]">
         ✓
       </div>

@@ -56,7 +56,7 @@ export default async function AdminDashboardPage({
     .limit(5);
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
       {forbidden ? (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
           No tenés permiso para acceder a esa sección. Si necesitás otro rol, contactá al administrador.
@@ -65,7 +65,7 @@ export default async function AdminDashboardPage({
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="font-admin-display text-4xl font-bold tracking-tight">Tablero General</h1>
+          <h1 className="font-admin-display text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">Tablero General</h1>
           <p className="text-muted-foreground mt-1">Resumen de operaciones de Carpe Diem.</p>
         </div>
         <div className="flex flex-wrap gap-3">

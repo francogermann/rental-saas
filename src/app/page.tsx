@@ -23,7 +23,7 @@ export default function HomePage() {
         </div>
 
         {/* Content */}
-        <div className="relative z-10 container mx-auto max-w-7xl px-6 py-24">
+        <div className="relative z-10 container mx-auto max-w-7xl px-4 sm:px-6 py-16 sm:py-24">
           <div className="max-w-2xl">
             <p className="text-fuchsia-400 font-medium uppercase tracking-[0.3em] text-sm mb-4">
               ✦ #TuMejorVersion
@@ -74,7 +74,7 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════
           FEATURES - "TODO LO QUE NECESITÁS"
       ═══════════════════════════════════════════════════════ */}
-      <section className="py-24 px-6 relative">
+      <section className="py-16 sm:py-24 px-4 sm:px-6 relative">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,hsl(315_100%_60%/.06),transparent_50%)]" />
         <div className="container mx-auto max-w-7xl relative z-10">
           <div className="grid md:grid-cols-2 gap-16 items-center">
@@ -121,12 +121,12 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════
           HOW IT WORKS
       ═══════════════════════════════════════════════════════ */}
-      <section id="how-it-works" className="py-24 px-6">
+      <section id="how-it-works" className="py-16 sm:py-24 px-4 sm:px-6">
         <div className="container mx-auto max-w-7xl text-center">
           <p className="text-fuchsia-400 font-medium uppercase tracking-widest text-sm mb-3">Simple y rápido</p>
           <h2 className="font-display text-3xl md:text-5xl font-bold tracking-tight mb-16">¿Cómo funciona?</h2>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
             {[
               { step: '01', icon: '👗', title: 'Elegí', desc: 'Explorá nuestro catálogo online y elegí hasta 4 vestidos.' },
               { step: '02', icon: '📅', title: 'Reservá', desc: 'Seleccioná tus fechas y reservá sin agenda previa.' },
@@ -150,7 +150,7 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════
           WHY CHOOSE US
       ═══════════════════════════════════════════════════════ */}
-      <section className="py-24 px-6 relative">
+      <section className="py-16 sm:py-24 px-4 sm:px-6 relative">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_70%,hsl(285_100%_68%/.06),transparent_50%)]" />
         <div className="container mx-auto max-w-7xl relative z-10">
           <div className="text-center mb-16">
@@ -181,7 +181,7 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════
           TESTIMONIALS
       ═══════════════════════════════════════════════════════ */}
-      <section className="py-24 px-6">
+      <section className="py-16 sm:py-24 px-4 sm:px-6">
         <div className="container mx-auto max-w-7xl">
           <div className="text-center mb-16">
             <p className="text-fuchsia-400 font-medium uppercase tracking-widest text-sm mb-3">Historias reales</p>
@@ -213,9 +213,9 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════
           STATS BAR
       ═══════════════════════════════════════════════════════ */}
-      <section className="py-16 px-6 border-y border-white/10 bg-white/[0.02]">
+      <section className="py-16 px-4 sm:px-6 border-y border-white/10 bg-white/[0.02]">
         <div className="container mx-auto max-w-5xl">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
             {[
               { value: '+1000', label: 'Vestidos', icon: '👗' },
               { value: '46K+', label: 'Seguidoras', icon: '💖' },
@@ -238,7 +238,7 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════
           LOCATIONS
       ═══════════════════════════════════════════════════════ */}
-      <section className="py-24 px-6">
+      <section className="py-16 sm:py-24 px-4 sm:px-6">
         <div className="container mx-auto max-w-7xl">
           <div className="text-center mb-16">
             <p className="text-fuchsia-400 font-medium uppercase tracking-widest text-sm mb-3">Visitanos</p>
@@ -264,7 +264,7 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════
           FAQ
       ═══════════════════════════════════════════════════════ */}
-      <section className="py-24 px-6 relative">
+      <section className="py-16 sm:py-24 px-4 sm:px-6 relative">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,hsl(315_100%_60%/.05),transparent_50%)]" />
         <div className="container mx-auto max-w-3xl relative z-10">
           <div className="text-center mb-16">
@@ -309,7 +309,7 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════
           FINAL CTA
       ═══════════════════════════════════════════════════════ */}
-      <section className="py-24 px-6 text-center relative overflow-hidden">
+      <section className="py-16 sm:py-24 px-4 sm:px-6 text-center relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,hsl(315_100%_60%/.12),transparent_50%)]" />
         <div className="relative z-10 container mx-auto max-w-3xl">
           <h2 className="font-display text-4xl md:text-6xl font-bold tracking-tight mb-6">

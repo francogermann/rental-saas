@@ -11,8 +11,8 @@ export default async function DashboardPage() {
   if (!user) redirect('/auth/login');
 
   return (
-    <div className="container mx-auto max-w-3xl px-6 py-24">
-      <h1 className="font-display text-4xl font-bold tracking-tight mb-2">Hola</h1>
+    <div className="container mx-auto max-w-3xl px-4 sm:px-6 py-16 sm:py-24">
+      <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight mb-2">Hola</h1>
       <p className="text-muted-foreground mb-10">{user.email}</p>
 
       <div className="grid gap-4 sm:grid-cols-2">

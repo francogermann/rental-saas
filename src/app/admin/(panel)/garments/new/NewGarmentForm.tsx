@@ -28,13 +28,13 @@ export default function NewGarmentForm({ locations }: Props) {
   };
 
   return (
-    <div className="p-8 max-w-3xl mx-auto space-y-8 animate-in fade-in duration-500">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto space-y-8 animate-in fade-in duration-500">
       <div className="flex items-center gap-4">
         <a href="/admin/garments" className="w-10 h-10 flex items-center justify-center rounded-full bg-white/[0.03] border border-white/10 hover:bg-white/10 transition-colors">
           <span className="text-muted-foreground text-xl">←</span>
         </a>
         <div>
-          <h1 className="font-admin-display text-4xl font-bold tracking-tight">Nueva Prenda</h1>
+          <h1 className="font-admin-display text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">Nueva Prenda</h1>
           <p className="text-muted-foreground mt-1">
             Marcá los talles en los que tenés esta pieza. Se creará un registro por talle (mismo precio y fotos), con SKU{' '}
             <span className="text-fuchsia-300/90">BASE-TALLE</span>.

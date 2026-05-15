@@ -16,8 +16,8 @@ export default function AdminLoginPage({
 
   return (
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4">
-      <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-8 shadow-2xl">
-        <h1 className="font-admin-display text-2xl font-semibold tracking-tight mb-1 bg-gradient-to-r from-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
+      <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-6 sm:p-8 shadow-2xl">
+        <h1 className="font-admin-display text-xl sm:text-2xl font-semibold tracking-tight mb-1 bg-gradient-to-r from-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
           Carpe Diem — Admin
         </h1>
         <p className="text-sm text-muted-foreground mb-8">Ingresá con tu usuario del panel.</p>

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AdminTableScroll } from '@/components/admin/AdminTableScroll';
 import { createAdminClient } from '@/lib/supabase/server';
 import { restoreCustomer } from '@/lib/actions/admin';
 import { requireAdminPagePermission } from '@/lib/admin-auth-server';
@@ -11,7 +12,7 @@ export default async function TrashCustomersPage() {
   const supabase = createAdminClient();
   const { data: org, error: orgErr } = await supabase.from('organizations').select('id').eq('slug', 'maison-demo').single();
   if (orgErr || !org) {
-    return <div className="p-8 text-red-400">Organización no encontrada.</div>;
+    return <div className="p-4 sm:p-6 lg:p-8 text-red-400">Organización no encontrada.</div>;
   }
 
   const { data: rows, error } = await supabase
@@ -22,14 +23,14 @@ export default async function TrashCustomersPage() {
     .order('deleted_at', { ascending: false });
 
   if (error) {
-    return <div className="p-8 text-red-400">{error.message}</div>;
+    return <div className="p-4 sm:p-6 lg:p-8 text-red-400">{error.message}</div>;
   }
 
   return (
-    <div className="p-8 max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="font-admin-display text-4xl font-bold tracking-tight">Papelera — clientas</h1>
+          <h1 className="font-admin-display text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">Papelera — clientas</h1>
           <p className="text-muted-foreground mt-1">Clientas ocultas para nuevas operaciones; las reservas históricas se conservan.</p>
         </div>
         <Link href="/admin/reservations" className="text-sm text-fuchsia-400 hover:text-fuchsia-300 font-semibold">
@@ -38,7 +39,8 @@ export default async function TrashCustomersPage() {
       </div>
 
       <div className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden">
-        <table className="w-full text-left text-sm">
+        <AdminTableScroll>
+        <table className="w-full min-w-[640px] text-left text-sm whitespace-nowrap">
           <thead className="bg-white/[0.03] border-b border-white/5 text-xs uppercase tracking-widest text-muted-foreground">
             <tr>
               <th className="px-4 py-3">Clienta</th>
@@ -81,6 +83,7 @@ export default async function TrashCustomersPage() {
             )}
           </tbody>
         </table>
+        </AdminTableScroll>
       </div>
     </div>
   );

@@ -77,7 +77,7 @@ export default function CheckoutClientPage() {
             )}
 
             <form onSubmit={handleCheckout} className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-muted-foreground" htmlFor="firstName">Nombre</label>
                   <input required id="firstName" name="firstName" type="text" className="w-full h-12 bg-white/5 border border-white/10 focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 rounded-xl px-4 outline-none transition-all text-foreground placeholder:text-muted-foreground/50" />
