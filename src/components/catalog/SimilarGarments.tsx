@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
+import { primaryPhotoUrl } from '@/lib/photo-urls';
 import { formatUy } from '@/lib/utils';
 import type { GarmentSummary } from '@/types/domain';
 
@@ -21,16 +22,18 @@ export function SimilarGarments({ items, pickupLocationId, pickupDate, returnDat
         Misma categoría y talle. La disponibilidad puede variar según las fechas que elijas.
       </p>
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {items.map((g) => (
+        {items.map((g) => {
+          const thumb = primaryPhotoUrl(g.photos_urls);
+          return (
           <Link
             key={g.id}
             href={`/catalog/${g.id}?pickupLocationId=${encodeURIComponent(pickupLocationId)}&pickupDate=${encodeURIComponent(pickupDate)}&returnDate=${encodeURIComponent(returnDate)}`}
             className="group overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] transition hover:border-fuchsia-500/30"
           >
             <div className="relative aspect-[3/4] bg-muted">
-              {g.photos_urls?.[0] ? (
+              {thumb ? (
                 <Image
-                  src={g.photos_urls[0]}
+                  src={thumb}
                   alt={g.name}
                   fill
                   sizes="(max-width: 768px) 100vw, 25vw"
@@ -52,7 +55,8 @@ export function SimilarGarments({ items, pickupLocationId, pickupDate, returnDat
               <p className="mt-1 text-xs font-bold">{formatUy(g.rental_price)}</p>
             </div>
           </Link>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

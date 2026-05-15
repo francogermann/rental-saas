@@ -9,9 +9,11 @@ import type { Database } from '@/types/supabase';
 import type { GarmentSummary } from '@/types/domain';
 import { searchAvailableGarments } from '@/lib/actions/availability';
 import { SimilarGarments } from '@/components/catalog/SimilarGarments';
+import { ShoeRecommendationsRail } from '@/components/catalog/ShoeRecommendationsRail';
 import { WaitlistJoin } from '@/components/catalog/WaitlistJoin';
 import { FavoriteHeart } from '@/components/catalog/FavoriteHeart';
 import { dateRangesOverlap } from '@/lib/date-range';
+import { primaryPhotoUrl, uniquePhotoUrls } from '@/lib/photo-urls';
 
 type GarmentRow = Database['public']['Tables']['garments']['Row'];
 type GarmentDetailRow = GarmentRow & {
@@ -46,7 +48,7 @@ function mapSimilarRow(r: SimilarRow): GarmentSummary {
     category: r.category,
     rental_price: r.rental_price,
     deposit_amount: r.deposit_amount,
-    photos_urls: r.photos_urls ?? [],
+    photos_urls: uniquePhotoUrls(r.photos_urls ?? []),
     chest_cm: r.chest_cm,
     waist_cm: r.waist_cm,
     hip_cm: r.hip_cm,
@@ -136,6 +138,8 @@ export default async function GarmentDetailPage({
     sedeLine = chosen ? { name: chosen.name, address_line: chosen.address_line } : null;
   }
 
+  const detailPhotoUrl = primaryPhotoUrl(garment.photos_urls);
+
   const cartGarment: GarmentSummary = {
     id: garment.id,
     name: garment.name,
@@ -144,7 +148,7 @@ export default async function GarmentDetailPage({
     category: garment.category,
     rental_price: garment.rental_price,
     deposit_amount: garment.deposit_amount,
-    photos_urls: garment.photos_urls ?? [],
+    photos_urls: uniquePhotoUrls(garment.photos_urls),
     chest_cm: garment.chest_cm,
     waist_cm: garment.waist_cm,
     hip_cm: garment.hip_cm,
@@ -224,9 +228,9 @@ export default async function GarmentDetailPage({
         <div className="grid items-start gap-12 md:grid-cols-2 lg:gap-16">
           <div className="flex flex-col gap-4 md:sticky md:top-24">
             <div className="relative aspect-[3/4] overflow-hidden rounded-3xl border border-white/10 bg-muted shadow-2xl">
-              {garment.photos_urls && garment.photos_urls.length > 0 ? (
+              {detailPhotoUrl ? (
                 <Image
-                  src={garment.photos_urls[0]}
+                  src={detailPhotoUrl}
                   alt={garment.name}
                   fill
                   sizes="(max-width: 768px) 100vw, 50vw"
@@ -312,6 +316,8 @@ export default async function GarmentDetailPage({
             />
           </div>
         </div>
+
+        <ShoeRecommendationsRail />
 
         <SimilarGarments
           items={similarGarments}

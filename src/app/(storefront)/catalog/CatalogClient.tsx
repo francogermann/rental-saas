@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
@@ -9,6 +9,9 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useCart } from '@/components/cart/CartContext';
 import { formatUy } from '@/lib/utils';
 import { FavoriteHeart } from '@/components/catalog/FavoriteHeart';
+import { searchAvailableGarments } from '@/lib/actions/availability';
+import { CATALOG_FETCH_SIZE, CATALOG_PAGE_SIZE } from '@/lib/catalog-pagination';
+import { pickCatalogCoverUrl } from '@/lib/photo-urls';
 
 import type { GarmentSummary } from '@/types/domain';
 
@@ -48,6 +51,8 @@ const COLORS = [
 
 interface CatalogClientProps {
   garments: GarmentSummary[];
+  /** True si el servidor recibió más de CATALOG_PAGE_SIZE filas (hay página siguiente). */
+  initialHasMore: boolean;
   error: string | null;
   initialPickupDate: string;
   initialReturnDate: string;
@@ -64,6 +69,7 @@ interface CatalogClientProps {
 
 export default function CatalogClient({
   garments,
+  initialHasMore,
   error,
   initialPickupDate,
   initialReturnDate,
@@ -95,6 +101,17 @@ export default function CatalogClient({
   const [sortBy, setSortBy] = useState('recommended');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
+  const [items, setItems] = useState(garments);
+  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setItems(garments);
+    setHasMore(initialHasMore);
+    setLoadMoreError(null);
+  }, [garments, initialHasMore]);
+
   useEffect(() => {
     setPickupDate(initialPickupDate);
     setReturnDate(initialReturnDate);
@@ -105,6 +122,56 @@ export default function CatalogClient({
   }, [initialPickupDate, initialReturnDate, pickupLocationId, initialCategory, initialSize, initialMaxPrice]);
 
   const { addItem } = useCart();
+
+  const handleLoadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    setLoadMoreError(null);
+    try {
+      const offset = items.length;
+      const res = await searchAvailableGarments({
+        pickupDate,
+        returnDate,
+        pickupLocationId: pickupLoc,
+        category: initialCategory,
+        sizeLabel: initialSize,
+        maxPrice: initialMaxPrice,
+        limit: CATALOG_FETCH_SIZE,
+        offset,
+      });
+      if (res.error) {
+        setLoadMoreError(res.error);
+        return;
+      }
+      const batch = res.data ?? [];
+      const nextHasMore = batch.length > CATALOG_PAGE_SIZE;
+      const slice = batch.slice(0, CATALOG_PAGE_SIZE);
+      setItems((prev) => {
+        const seen = new Set(prev.map((g) => g.id));
+        const merged = [...prev];
+        for (const g of slice) {
+          if (!seen.has(g.id)) {
+            seen.add(g.id);
+            merged.push(g);
+          }
+        }
+        return merged;
+      });
+      setHasMore(nextHasMore);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [
+    loadingMore,
+    hasMore,
+    items.length,
+    pickupDate,
+    returnDate,
+    pickupLoc,
+    initialCategory,
+    initialSize,
+    initialMaxPrice,
+  ]);
 
   const toggleFilter = (arr: string[], val: string, setter: (v: string[]) => void) => {
     setter(arr.includes(val) ? arr.filter((v) => v !== val) : [...arr, val]);
@@ -139,8 +206,8 @@ export default function CatalogClient({
     selectedEvents.length + selectedCategories.length + selectedSizes.length + selectedColors.length;
 
   const filtered = useMemo(() => {
-    if (!garments) return [];
-    const filteredArray = garments.filter((g) => {
+    if (!items.length) return [];
+    const filteredArray = items.filter((g) => {
       if (selectedEvents.length > 0) {
         const tags = (g.tags || []).map((t) => t.toLowerCase());
         const name = g.name.toLowerCase();
@@ -189,7 +256,16 @@ export default function CatalogClient({
       if (sortBy === 'popular') return b.name.length - a.name.length;
       return 0;
     });
-  }, [garments, selectedEvents, selectedCategories, selectedSizes, selectedColors, sortBy]);
+  }, [items, selectedEvents, selectedCategories, selectedSizes, selectedColors, sortBy]);
+
+  const catalogCoverByGarmentId = useMemo(() => {
+    const used = new Set<string>();
+    const m = new Map<string, string | null>();
+    for (const g of filtered) {
+      m.set(g.id, pickCatalogCoverUrl(g.photos_urls, used));
+    }
+    return m;
+  }, [filtered]);
 
   const FilterSection = ({
     title,
@@ -425,51 +501,59 @@ export default function CatalogClient({
         </aside>
 
         <div className="flex-1">
-          <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-            <p className="text-sm text-muted-foreground">
-              Mostrando <span className="font-semibold text-foreground">{filtered.length}</span> resultados
-            </p>
-            <div className="flex items-center gap-2">
-              <label htmlFor="sort" className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                Ordenar por
-              </label>
-              <select
-                id="sort"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-foreground outline-none focus:border-fuchsia-500/50"
-              >
-                <option value="recommended" className="text-black">
-                  Destacados
-                </option>
-                <option value="popular" className="text-black">
-                  Más Reservados
-                </option>
-                <option value="price_asc" className="text-black">
-                  Menor Precio
-                </option>
-                <option value="price_desc" className="text-black">
-                  Mayor Precio
-                </option>
-                <option value="name_asc" className="text-black">
-                  Nombre (A-Z)
-                </option>
-              </select>
+          <div className="mb-6 flex flex-col gap-3">
+            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+              <p className="text-sm text-muted-foreground">
+                Mostrando <span className="font-semibold text-foreground">{filtered.length}</span> resultados
+              </p>
+              <div className="flex items-center gap-2">
+                <label htmlFor="sort" className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  Ordenar por
+                </label>
+                <select
+                  id="sort"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-foreground outline-none focus:border-fuchsia-500/50"
+                >
+                  <option value="recommended" className="text-black">
+                    Destacados
+                  </option>
+                  <option value="popular" className="text-black">
+                    Más Reservados
+                  </option>
+                  <option value="price_asc" className="text-black">
+                    Menor Precio
+                  </option>
+                  <option value="price_desc" className="text-black">
+                    Mayor Precio
+                  </option>
+                  <option value="name_asc" className="text-black">
+                    Nombre (A-Z)
+                  </option>
+                </select>
+              </div>
             </div>
+            {(selectedEvents.length > 0 || selectedColors.length > 0) && (
+              <p className="text-xs text-muted-foreground">
+                Los filtros de evento y color se aplican a las prendas ya cargadas. Usá &quot;Cargar más&quot; para traer más del catálogo.
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
             {filtered.map((g) => {
               const redirectPath = `${pathname}?${searchParams.toString()}`;
+              const coverUrl = catalogCoverByGarmentId.get(g.id);
               return (
                 <Card
                   key={g.id}
                   className="group flex flex-col overflow-hidden rounded-3xl border-white/10 bg-white/[0.03] shadow-2xl backdrop-blur-xl transition-all duration-500 hover:border-fuchsia-500/30 hover:shadow-glow"
                 >
                   <div className="relative aspect-[3/4] overflow-hidden bg-muted">
-                    {g.photos_urls && g.photos_urls.length > 0 ? (
+                    {coverUrl ? (
                       <Image
-                        src={g.photos_urls[0]}
+                        src={coverUrl}
                         alt={g.name}
                         fill
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -551,6 +635,20 @@ export default function CatalogClient({
               );
             })}
           </div>
+
+          {hasMore && !error && (
+            <div className="mt-10 flex flex-col items-center gap-3">
+              {loadMoreError ? <p className="text-sm text-destructive">{loadMoreError}</p> : null}
+              <button
+                type="button"
+                onClick={() => void handleLoadMore()}
+                disabled={loadingMore}
+                className="rounded-2xl border border-fuchsia-500/40 bg-fuchsia-500/10 px-8 py-3 text-sm font-semibold text-fuchsia-200 transition-colors hover:bg-fuchsia-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {loadingMore ? 'Cargando…' : 'Cargar más'}
+              </button>
+            </div>
+          )}
 
           {filtered.length === 0 && !error && (
             <div className="flex flex-col items-center justify-center py-24 text-center opacity-60">

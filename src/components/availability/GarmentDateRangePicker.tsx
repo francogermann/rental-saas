@@ -34,6 +34,19 @@ export function GarmentDateRangePicker({
         })),
     [blockedRanges]);
 
+    const calendarModifiers = useMemo(
+        () => ({
+            blocked: (date: Date) => {
+                const day = startOfDay(date);
+                return parsedBlocks.some(
+                    (b) => day >= startOfDay(b.from) && day <= startOfDay(b.to),
+                );
+            },
+            past: (date: Date) => startOfDay(date) < today,
+        }),
+        [parsedBlocks, today],
+    );
+
     const disabledDays = useMemo(() => [
         { before: today },
         ...parsedBlocks.map(b => ({ from: b.from, to: b.to })),
@@ -134,6 +147,18 @@ export function GarmentDateRangePicker({
                 .garment-date-rdp .rdp-disabled .rdp-day_button {
                     color: hsl(var(--muted-foreground));
                 }
+                .garment-date-rdp .garment-rdp-day-blocked:not(.rdp-outside) .rdp-day_button {
+                    background-color: hsl(0 70% 38% / 0.55);
+                    color: hsl(0 0% 98%);
+                    border: 1px solid hsl(0 65% 42% / 0.85);
+                }
+                .garment-date-rdp .garment-rdp-day-blocked:not(.rdp-outside) .rdp-day_button:hover:not(:disabled) {
+                    background-color: hsl(0 70% 34% / 0.65);
+                    color: hsl(0 0% 100%);
+                }
+                .garment-date-rdp .garment-rdp-day-past:not(.rdp-outside):not(.garment-rdp-day-blocked) .rdp-day_button {
+                    opacity: 0.45;
+                }
                 @media (max-width: 767px) {
                     .garment-date-rdp .rdp-months { flex-direction: column; align-items: center; }
                     .garment-date-rdp .rdp-months .rdp-month:nth-child(2) { display: none; }
@@ -147,6 +172,11 @@ export function GarmentDateRangePicker({
                 selected={range}
                 onSelect={handleSelect}
                 disabled={disabledDays}
+                modifiers={calendarModifiers}
+                modifiersClassNames={{
+                    blocked: 'garment-rdp-day-blocked',
+                    past: 'garment-rdp-day-past',
+                }}
                 numberOfMonths={2}
                 showOutsideDays={false}
             />
@@ -157,8 +187,12 @@ export function GarmentDateRangePicker({
                     Seleccionado
                 </span>
                 <span className="flex items-center gap-1.5">
-                    <span className="inline-block w-3 h-3 rounded-sm bg-muted-foreground/20" />
-                    No disponible
+                    <span className="inline-block h-3 w-3 rounded-sm border border-red-700/60 bg-red-700/45" />
+                    No disponible (reservado u ocupado)
+                </span>
+                <span className="flex items-center gap-1.5">
+                    <span className="inline-block h-3 w-3 rounded-sm bg-muted-foreground/25 opacity-50" />
+                    Fecha pasada
                 </span>
             </div>
 

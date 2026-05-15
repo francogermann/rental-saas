@@ -8,6 +8,7 @@ import {
   CATALOG_CATEGORY_OPTIONS,
   CATALOG_SIZE_OPTIONS,
 } from '@/lib/catalog-taxonomy';
+import { CATALOG_FETCH_SIZE, CATALOG_PAGE_SIZE } from '@/lib/catalog-pagination';
 
 function pickStr(sp: Record<string, string | string[] | undefined>, key: string): string | undefined {
   const v = sp[key];
@@ -92,15 +93,20 @@ export default async function CatalogPage({
   const maxPrice =
     maxPriceRaw !== undefined && !Number.isNaN(maxPriceParsed) && maxPriceParsed > 0 ? maxPriceParsed : undefined;
 
-  const { data: garments, error } = await searchAvailableGarments({
+  const { data: garmentsRaw, error } = await searchAvailableGarments({
     pickupDate,
     returnDate,
     pickupLocationId,
     category,
     sizeLabel,
     maxPrice,
-    limit: 50,
+    limit: CATALOG_FETCH_SIZE,
+    offset: 0,
   });
+
+  const rawList = garmentsRaw ?? [];
+  const garments = rawList.slice(0, CATALOG_PAGE_SIZE);
+  const initialHasMore = rawList.length > CATALOG_PAGE_SIZE;
 
   const supabase = createServerClient();
   const {
@@ -128,7 +134,8 @@ export default async function CatalogPage({
       </section>
 
       <CatalogClient
-        garments={garments ?? []}
+        garments={garments}
+        initialHasMore={initialHasMore}
         error={error}
         initialPickupDate={pickupDate}
         initialReturnDate={returnDate}
