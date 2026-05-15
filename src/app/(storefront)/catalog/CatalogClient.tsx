@@ -359,8 +359,17 @@ export default function CatalogClient({
         p.set('showAll', '1');
       }
     } else if (draftFilterByAvailability) {
-      setAddError('Elegí la fecha de tu evento para filtrar por disponibilidad.');
-      return;
+      if (!pickup || !ret) {
+        setAddError('Elegí fechas de retiro y devolución, o la fecha de tu evento.');
+        return;
+      }
+      if (pickup > ret) {
+        setAddError('La fecha de retiro debe ser anterior a la devolución.');
+        return;
+      }
+      p.set('pickupDate', pickup);
+      p.set('returnDate', ret);
+      p.set('availableOnly', '1');
     } else {
       p.set('showAll', '1');
     }
@@ -435,15 +444,6 @@ export default function CatalogClient({
 
   const filtersContent = (
     <>
-      {catalogBrowseWithoutDates ? (
-        <p className="rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2.5 text-[10px] leading-snug text-muted-foreground">
-          Estás viendo sin fecha de evento.{' '}
-          <button type="button" onClick={handleChangeEventDate} className="text-fuchsia-400 underline hover:text-fuchsia-300">
-            Indicar fecha
-          </button>{' '}
-          para filtrar por disponibilidad al reservar.
-        </p>
-      ) : (
       <CatalogFilterSection title="Fechas y sede" count={0} defaultOpen>
         <div className="flex flex-col gap-3">
           <div>
@@ -557,7 +557,6 @@ export default function CatalogClient({
           )}
         </div>
       </CatalogFilterSection>
-      )}
 
       <CatalogFilterSection title="Evento" count={draftEvents.length}>
         <div className="flex flex-wrap gap-2">
