@@ -142,8 +142,7 @@ export default async function AdminDashboardPage({
           </CardHeader>
           <CardContent className="space-y-2">
             <p className="text-xs text-muted-foreground">
-              Enviá avisos por email cuando una prenda vuelva a estar libre para el rango elegido. No requiere Vercel Cron:
-              podés usar este botón o un cron gratuito externo contra <code className="text-fuchsia-300/90">/api/cron/waitlist</code>.
+              Enviá avisos por email cuando una prenda vuelva a estar libre para el rango elegido (no implementado aún).
             </p>
             <ProcessWaitlistButton />
           </CardContent>
