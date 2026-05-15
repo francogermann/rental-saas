@@ -9,7 +9,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useCart } from '@/components/cart/CartContext';
 import { formatUy } from '@/lib/utils';
 import { FavoriteHeart } from '@/components/catalog/FavoriteHeart';
-import { searchAvailableGarments } from '@/lib/actions/availability';
+import { listCatalogGarments, searchAvailableGarments } from '@/lib/actions/availability';
 import { CATALOG_FETCH_SIZE, CATALOG_PAGE_SIZE } from '@/lib/catalog-pagination';
 import { pickCatalogCoverUrl } from '@/lib/photo-urls';
 
@@ -65,6 +65,7 @@ interface CatalogClientProps {
   sizeOptions: string[];
   favoriteIds: string[];
   isLoggedIn: boolean;
+  initialAvailableOnly: boolean;
 }
 
 export default function CatalogClient({
@@ -82,6 +83,7 @@ export default function CatalogClient({
   sizeOptions,
   favoriteIds,
   isLoggedIn,
+  initialAvailableOnly,
 }: CatalogClientProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -90,6 +92,7 @@ export default function CatalogClient({
   const [pickupDate, setPickupDate] = useState(initialPickupDate);
   const [returnDate, setReturnDate] = useState(initialReturnDate);
   const [pickupLoc, setPickupLoc] = useState(pickupLocationId);
+  const [filterByAvailability, setFilterByAvailability] = useState(initialAvailableOnly);
 
   const [selectedEvents, setSelectedEvents] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>(() =>
@@ -116,10 +119,19 @@ export default function CatalogClient({
     setPickupDate(initialPickupDate);
     setReturnDate(initialReturnDate);
     setPickupLoc(pickupLocationId);
+    setFilterByAvailability(initialAvailableOnly);
     setSelectedCategories(initialCategory ? [initialCategory] : []);
     setSelectedSizes(initialSize ? [initialSize] : []);
     setMaxPriceInput(initialMaxPrice != null ? String(initialMaxPrice) : '');
-  }, [initialPickupDate, initialReturnDate, pickupLocationId, initialCategory, initialSize, initialMaxPrice]);
+  }, [
+    initialPickupDate,
+    initialReturnDate,
+    pickupLocationId,
+    initialAvailableOnly,
+    initialCategory,
+    initialSize,
+    initialMaxPrice,
+  ]);
 
   const { addItem } = useCart();
 
@@ -129,16 +141,21 @@ export default function CatalogClient({
     setLoadMoreError(null);
     try {
       const offset = items.length;
-      const res = await searchAvailableGarments({
-        pickupDate,
-        returnDate,
+      const listParams = {
         pickupLocationId: pickupLoc,
         category: initialCategory,
         sizeLabel: initialSize,
         maxPrice: initialMaxPrice,
         limit: CATALOG_FETCH_SIZE,
         offset,
-      });
+      };
+      const res = filterByAvailability
+        ? await searchAvailableGarments({
+            pickupDate,
+            returnDate,
+            ...listParams,
+          })
+        : await listCatalogGarments(listParams);
       if (res.error) {
         setLoadMoreError(res.error);
         return;
@@ -171,6 +188,7 @@ export default function CatalogClient({
     initialCategory,
     initialSize,
     initialMaxPrice,
+    filterByAvailability,
   ]);
 
   const toggleFilter = (arr: string[], val: string, setter: (v: string[]) => void) => {
@@ -182,6 +200,7 @@ export default function CatalogClient({
     p.set('pickupLocationId', pickupLoc);
     p.set('pickupDate', pickupDate);
     p.set('returnDate', returnDate);
+    if (filterByAvailability) p.set('availableOnly', '1');
     if (selectedCategories.length === 1) p.set('category', selectedCategories[0]);
     if (selectedSizes.length === 1) p.set('size', selectedSizes[0]);
     const mp = Number(maxPriceInput);
@@ -199,6 +218,7 @@ export default function CatalogClient({
     p.set('pickupLocationId', pickupLoc);
     p.set('pickupDate', pickupDate);
     p.set('returnDate', returnDate);
+    if (filterByAvailability) p.set('availableOnly', '1');
     router.push(`${pathname}?${p.toString()}`);
   };
 
@@ -365,6 +385,20 @@ export default function CatalogClient({
               Un valor por vez en el servidor; podés refinar más con los chips de abajo.
             </p>
           </div>
+          <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2.5">
+            <input
+              type="checkbox"
+              checked={filterByAvailability}
+              onChange={(e) => setFilterByAvailability(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-white/20 bg-white/5 text-fuchsia-600 focus:ring-fuchsia-500/50"
+            />
+            <span className="text-xs leading-snug text-muted-foreground">
+              Solo disponibles para estas fechas
+              <span className="mt-0.5 block text-[10px] opacity-80">
+                Si no marcás, ves toda la colección publicable; las fechas se usan al reservar.
+              </span>
+            </span>
+          </label>
           <button
             type="button"
             onClick={pushCatalogUrl}
@@ -455,7 +489,11 @@ export default function CatalogClient({
               </span>
             )}
           </button>
-          <p className="hidden text-sm text-muted-foreground sm:block">Resultados según URL y disponibilidad</p>
+          <p className="hidden text-sm text-muted-foreground sm:block">
+            {filterByAvailability
+              ? 'Filtrado por disponibilidad en las fechas elegidas'
+              : 'Toda la colección publicable'}
+          </p>
         </div>
         <div className="flex items-center gap-3">
           {activeCount > 0 && (

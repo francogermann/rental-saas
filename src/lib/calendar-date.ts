@@ -1,4 +1,4 @@
-import { parse, startOfDay } from 'date-fns';
+import { format, parse, startOfDay } from 'date-fns';
 
 /**
  * Interpreta 'YYYY-MM-DD' como fecha de calendario en la zona local del navegador.
@@ -6,4 +6,9 @@ import { parse, startOfDay } from 'date-fns';
  */
 export function parseLocalYmd(dateString: string): Date {
   return startOfDay(parse(dateString, 'yyyy-MM-dd', new Date()));
+}
+
+/** Serializa un instante como YYYY-MM-DD en el calendario local (no uses toISOString().split('T')[0]). */
+export function toLocalYmdString(date: Date): string {
+  return format(startOfDay(date), 'yyyy-MM-dd');
 }

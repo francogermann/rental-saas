@@ -7,9 +7,11 @@
 
 import { z } from 'zod';
 import { createServerClient, createAdminClient } from '@/lib/supabase/server';
+import { uniquePhotoUrls } from '@/lib/photo-urls';
 import type {
     ActionResult,
     AvailabilitySearchParams,
+    CatalogListParams,
     GarmentSummary,
     BlockedDateRange,
     CreateReservationParams,
@@ -45,6 +47,15 @@ const BlockedDatesSchema = z.object({
     garmentId: z.string().uuid('garmentId debe ser un UUID válido'),
     fromDate: dateSchema.optional(),
     untilDate: dateSchema.optional(),
+});
+
+const CatalogListSchema = z.object({
+    pickupLocationId: z.string().uuid('Elegí una sede de retiro válida.'),
+    sizeLabel: z.string().min(1).max(10).optional(),
+    category: z.string().min(1).max(100).optional(),
+    maxPrice: z.number().positive().optional(),
+    limit: z.number().int().min(1).max(100).default(48),
+    offset: z.number().int().min(0).default(0),
 });
 
 const CreateReservationSchema = z.object({
@@ -125,6 +136,118 @@ export async function searchAvailableGarments(
     }
 
     return { data: data as GarmentSummary[], error: null };
+}
+
+
+type CatalogGarmentRow = {
+    id: string;
+    name: string;
+    sku: string;
+    size_label: string | null;
+    category: string | null;
+    rental_price: number | null;
+    deposit_amount: number;
+    photos_urls: string[] | null;
+    chest_cm: number | null;
+    waist_cm: number | null;
+    hip_cm: number | null;
+    length_cm: number | null;
+    tags: string[] | null;
+    style_group_id: string | null;
+    location_id: string | null;
+    locations: { name: string } | null;
+};
+
+function mapCatalogRow(r: CatalogGarmentRow): GarmentSummary {
+    return {
+        id: r.id,
+        name: r.name,
+        sku: r.sku,
+        size_label: r.size_label,
+        category: r.category,
+        rental_price: r.rental_price,
+        deposit_amount: r.deposit_amount,
+        photos_urls: uniquePhotoUrls(r.photos_urls ?? []),
+        chest_cm: r.chest_cm,
+        waist_cm: r.waist_cm,
+        hip_cm: r.hip_cm,
+        length_cm: r.length_cm,
+        tags: r.tags ?? [],
+        style_group_id: r.style_group_id,
+        location_id: r.location_id,
+        location_name: r.locations?.name ?? null,
+    };
+}
+
+// -----------------------------------------------------------------------------
+// ACTION 1b: listCatalogGarments
+// Catálogo completo (publicables) sin excluir por garment_blocks.
+// -----------------------------------------------------------------------------
+export async function listCatalogGarments(
+    params: CatalogListParams,
+): Promise<ActionResult<GarmentSummary[]>> {
+    const parsed = CatalogListSchema.safeParse(params);
+    if (!parsed.success) {
+        return {
+            data: null,
+            error: parsed.error.issues.map((i) => i.message).join('. '),
+        };
+    }
+
+    const { pickupLocationId, sizeLabel, category, maxPrice, limit, offset } = parsed.data;
+    const admin = createAdminClient();
+
+    const { data: orgData, error: orgError } = await admin
+        .from('organizations')
+        .select('id')
+        .eq('slug', 'maison-demo')
+        .single();
+
+    if (orgError || !orgData) {
+        return { data: null, error: 'Tienda inactiva o no encontrada.' };
+    }
+
+    const { data: locOk } = await admin
+        .from('locations')
+        .select('id')
+        .eq('id', pickupLocationId)
+        .eq('organization_id', orgData.id)
+        .maybeSingle();
+
+    if (!locOk) {
+        return { data: null, error: 'La sede de retiro no es válida para esta tienda.' };
+    }
+
+    let query = admin
+        .from('garments')
+        .select(
+            `
+      id, name, sku, size_label, category, rental_price, deposit_amount, photos_urls,
+      chest_cm, waist_cm, hip_cm, length_cm, tags, style_group_id, location_id,
+      locations!garments_location_id_fkey ( name )
+    `,
+        )
+        .eq('organization_id', orgData.id)
+        .is('deleted_at', null)
+        .eq('operative_status', 'available')
+        .or(`location_id.eq.${pickupLocationId},location_id.is.null`);
+
+    if (sizeLabel) query = query.eq('size_label', sizeLabel);
+    if (category) query = query.eq('category', category);
+    if (maxPrice != null) query = query.lte('rental_price', maxPrice);
+
+    const { data, error } = await query
+        .order('rental_price', { ascending: true })
+        .order('name', { ascending: true })
+        .range(offset, offset + limit - 1);
+
+    if (error) {
+        console.error('[listCatalogGarments] query error:', error.message);
+        return { data: null, error: 'Error al cargar el catálogo. Intente nuevamente.' };
+    }
+
+    const rows = (data ?? []) as unknown as CatalogGarmentRow[];
+    return { data: rows.map(mapCatalogRow), error: null };
 }
 
 

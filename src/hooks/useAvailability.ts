@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useTransition } from 'react';
 import { startOfDay } from 'date-fns';
 import { getBlockedDatesForGarment } from '@/lib/actions/availability';
-import { parseLocalYmd } from '@/lib/calendar-date';
+import { toLocalYmdString, parseLocalYmd } from '@/lib/calendar-date';
 import type { BlockedDateRange } from '@/types/domain';
 
 interface UseAvailabilityOptions {
@@ -19,12 +19,12 @@ export function useAvailability({
     const [error, setError] = useState<string | null>(null);
     const [isPending, startTransition] = useTransition();
 
-    const today = new Date();
-    const untilDate = new Date(today);
-    untilDate.setMonth(untilDate.getMonth() + monthsAhead);
+    const todayStart = startOfDay(new Date());
+    const until = startOfDay(new Date());
+    until.setMonth(until.getMonth() + monthsAhead);
 
-    const fromDate = today.toISOString().split('T')[0];
-    const untilStr = untilDate.toISOString().split('T')[0];
+    const fromDate = toLocalYmdString(todayStart);
+    const untilStr = toLocalYmdString(until);
 
     const load = useCallback(() => {
         if (!garmentId) {

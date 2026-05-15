@@ -191,6 +191,16 @@ export interface AvailabilitySearchParams {
     offset?: number;
 }
 
+/** Listado de catálogo sin filtrar por bloqueos de fechas. */
+export interface CatalogListParams {
+    pickupLocationId: string;
+    sizeLabel?: string;
+    category?: string;
+    maxPrice?: number;
+    limit?: number;
+    offset?: number;
+}
+
 export interface CreateReservationParams {
     garmentId: string;
     customerId: string;

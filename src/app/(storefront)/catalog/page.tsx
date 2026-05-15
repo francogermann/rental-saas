@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
-import { searchAvailableGarments } from '@/lib/actions/availability';
+import { listCatalogGarments, searchAvailableGarments } from '@/lib/actions/availability';
+import { toLocalYmdString } from '@/lib/calendar-date';
 import CatalogClient from './CatalogClient';
 import { createAdminClient, createServerClient } from '@/lib/supabase/server';
 import {
@@ -15,6 +16,11 @@ function pickStr(sp: Record<string, string | string[] | undefined>, key: string)
   if (typeof v !== 'string') return undefined;
   const t = v.trim();
   return t.length ? t : undefined;
+}
+
+function parseAvailableOnly(sp: Record<string, string | string[] | undefined>): boolean {
+  const v = pickStr(sp, 'availableOnly');
+  return v === '1' || v === 'true';
 }
 
 export default async function CatalogPage({
@@ -41,18 +47,23 @@ export default async function CatalogPage({
     return <div className="p-8 text-center text-muted-foreground">No hay sedes configuradas.</div>;
   }
 
-  const pickupDate =
-    typeof searchParams.pickupDate === 'string' ? searchParams.pickupDate : new Date().toISOString().split('T')[0];
-  const returnDate =
-    typeof searchParams.returnDate === 'string'
-      ? searchParams.returnDate
-      : new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0];
+  const today = toLocalYmdString(new Date());
+  const defaultReturn = toLocalYmdString(new Date(Date.now() + 86400000 * 3));
+  const pickupDate = typeof searchParams.pickupDate === 'string' ? searchParams.pickupDate : today;
+  const returnDate = typeof searchParams.returnDate === 'string' ? searchParams.returnDate : defaultReturn;
+  const availableOnly = parseAvailableOnly(searchParams);
 
   const rawLoc = typeof searchParams.pickupLocationId === 'string' ? searchParams.pickupLocationId.trim() : '';
   const defaultLocId = locations[0].id;
 
   if (!z.string().uuid().safeParse(rawLoc).success || !locations.some((l) => l.id === rawLoc)) {
-    redirect(`/catalog?pickupLocationId=${defaultLocId}&pickupDate=${pickupDate}&returnDate=${returnDate}`);
+    const qs = new URLSearchParams({
+      pickupLocationId: defaultLocId,
+      pickupDate,
+      returnDate,
+    });
+    if (availableOnly) qs.set('availableOnly', '1');
+    redirect(`/catalog?${qs.toString()}`);
   }
 
   const pickupLocationId = rawLoc;
@@ -93,16 +104,22 @@ export default async function CatalogPage({
   const maxPrice =
     maxPriceRaw !== undefined && !Number.isNaN(maxPriceParsed) && maxPriceParsed > 0 ? maxPriceParsed : undefined;
 
-  const { data: garmentsRaw, error } = await searchAvailableGarments({
-    pickupDate,
-    returnDate,
+  const listParams = {
     pickupLocationId,
     category,
     sizeLabel,
     maxPrice,
     limit: CATALOG_FETCH_SIZE,
     offset: 0,
-  });
+  };
+
+  const { data: garmentsRaw, error } = availableOnly
+    ? await searchAvailableGarments({
+        pickupDate,
+        returnDate,
+        ...listParams,
+      })
+    : await listCatalogGarments(listParams);
 
   const rawList = garmentsRaw ?? [];
   const garments = rawList.slice(0, CATALOG_PAGE_SIZE);
@@ -148,6 +165,7 @@ export default async function CatalogPage({
         sizeOptions={sizeOptions}
         favoriteIds={favoriteIds}
         isLoggedIn={Boolean(user)}
+        initialAvailableOnly={availableOnly}
       />
     </div>
   );
