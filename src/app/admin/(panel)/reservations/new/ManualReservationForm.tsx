@@ -48,9 +48,19 @@ export function ManualReservationForm({
   const [state, formAction] = useFormState(createManualReservation, initialState);
   const [customerMode, setCustomerMode] = useState<'registered' | 'walk_in'>('registered');
   const [garmentId, setGarmentId] = useState('');
+  const [customerSearch, setCustomerSearch] = useState('');
   const [garmentSearch, setGarmentSearch] = useState('');
 
   const selected = useMemo(() => garments.find((g) => g.id === garmentId), [garments, garmentId]);
+
+  const filteredCustomers = useMemo(() => {
+    const q = customerSearch.trim().toLowerCase();
+    if (!q) return customers;
+    return customers.filter((c) => {
+      const haystack = `${c.first_name} ${c.last_name} ${c.email}`.toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [customers, customerSearch]);
 
   const filteredGarments = useMemo(() => {
     const q = garmentSearch.trim().toLowerCase();
@@ -102,22 +112,53 @@ export function ManualReservationForm({
         </div>
 
         {customerMode === 'registered' ? (
-          <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              Elegí de la lista
-            </label>
-            <select
-              name="customer_id"
-              required
-              className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-foreground"
-            >
-              <option value="">Seleccioná una clienta…</option>
-              {customers.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.last_name}, {c.first_name} — {c.email}
-                </option>
-              ))}
-            </select>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Buscar clienta
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="search"
+                  value={customerSearch}
+                  onChange={(e) => setCustomerSearch(e.target.value)}
+                  placeholder="Nombre o email"
+                  className="min-w-0 flex-1 rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm"
+                />
+                {customerSearch ? (
+                  <button
+                    type="button"
+                    onClick={() => setCustomerSearch('')}
+                    className="shrink-0 rounded-lg border border-white/10 px-3 py-2 text-xs text-muted-foreground hover:bg-white/[0.06] hover:text-foreground"
+                  >
+                    Limpiar
+                  </button>
+                ) : null}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Elegí de la lista
+              </label>
+              {filteredCustomers.length === 0 ? (
+                <p className="rounded-lg border border-white/10 bg-black/20 px-3 py-4 text-sm text-muted-foreground">
+                  No hay clientas que coincidan. Probá otra búsqueda.
+                </p>
+              ) : (
+                <select
+                  name="customer_id"
+                  required
+                  className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-foreground"
+                >
+                  <option value="">Seleccioná una clienta…</option>
+                  {filteredCustomers.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.last_name}, {c.first_name} — {c.email}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
           </div>
         ) : (
           <div className="space-y-4">
@@ -170,20 +211,31 @@ export function ManualReservationForm({
         <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Prenda</h2>
         <div className="space-y-2">
           <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            Buscar por nombre o SKU (en vivo)
+            Buscar prenda
           </label>
-          <input
-            type="search"
-            value={garmentSearch}
-            onChange={(e) => setGarmentSearch(e.target.value)}
-            placeholder="Escribí para acotar la lista…"
-            className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm"
-          />
+          <div className="flex gap-2">
+            <input
+              type="search"
+              value={garmentSearch}
+              onChange={(e) => setGarmentSearch(e.target.value)}
+              placeholder="Nombre o SKU"
+              className="min-w-0 flex-1 rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm"
+            />
+            {garmentSearch ? (
+              <button
+                type="button"
+                onClick={() => setGarmentSearch('')}
+                className="shrink-0 rounded-lg border border-white/10 px-3 py-2 text-xs text-muted-foreground hover:bg-white/[0.06] hover:text-foreground"
+              >
+                Limpiar
+              </button>
+            ) : null}
+          </div>
         </div>
         <div className="max-h-[min(24rem,50vh)] overflow-y-auto rounded-xl border border-white/10 bg-black/20">
           {filteredGarments.length === 0 ? (
             <div className="p-8 text-center text-sm text-muted-foreground">
-              No hay prendas que coincidan. Probá otra búsqueda o usá el filtro superior de la página.
+              No hay prendas que coincidan. Probá otra búsqueda o actualizá el listado de sede arriba.
             </div>
           ) : (
             <ul className="divide-y divide-white/5">
