@@ -7,7 +7,7 @@ export default async function AdminGarmentsPage() {
 
   const { data: garments, error } = await supabase
     .from('garments')
-    .select('*, locations(name, address_line)')
+    .select('*, locations!garments_location_id_fkey(name, address_line)')
     .order('created_at', { ascending: false });
 
   if (error) {

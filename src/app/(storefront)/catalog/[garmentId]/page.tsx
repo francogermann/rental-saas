@@ -19,7 +19,7 @@ export default async function GarmentDetailPage({ params }: { params: { garmentI
     .from('garments')
     .select(`
       *,
-      locations ( name, address_line )
+      locations!garments_location_id_fkey(name, address_line)
     `)
     .eq('id', params.garmentId)
     .single();
