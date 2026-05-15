@@ -91,6 +91,80 @@ export type Database = {
           },
         ]
       }
+      favorite_garments: {
+        Row: {
+          created_at: string
+          garment_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          garment_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          garment_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorite_garments_garment_id_fkey"
+            columns: ["garment_id"]
+            isOneToOne: false
+            referencedRelation: "garments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      garment_waitlist: {
+        Row: {
+          created_at: string
+          garment_id: string
+          id: string
+          notified_at: string | null
+          organization_id: string
+          pickup_date: string
+          return_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          garment_id: string
+          id?: string
+          notified_at?: string | null
+          organization_id: string
+          pickup_date: string
+          return_date: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          garment_id?: string
+          id?: string
+          notified_at?: string | null
+          organization_id?: string
+          pickup_date?: string
+          return_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "garment_waitlist_garment_id_fkey"
+            columns: ["garment_id"]
+            isOneToOne: false
+            referencedRelation: "garments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "garment_waitlist_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -516,6 +590,7 @@ export type Database = {
           deposit_amount: number
           hip_cm: number
           id: string
+          length_cm: number | null
           location_id: string | null
           location_name: string | null
           name: string

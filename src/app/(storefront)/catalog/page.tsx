@@ -2,7 +2,19 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { searchAvailableGarments } from '@/lib/actions/availability';
 import CatalogClient from './CatalogClient';
-import { createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient, createServerClient } from '@/lib/supabase/server';
+import {
+  CATALOG_CATEGORY_LABEL_BY_VALUE,
+  CATALOG_CATEGORY_OPTIONS,
+  CATALOG_SIZE_OPTIONS,
+} from '@/lib/catalog-taxonomy';
+
+function pickStr(sp: Record<string, string | string[] | undefined>, key: string): string | undefined {
+  const v = sp[key];
+  if (typeof v !== 'string') return undefined;
+  const t = v.trim();
+  return t.length ? t : undefined;
+}
 
 export default async function CatalogPage({
   searchParams,
@@ -44,12 +56,62 @@ export default async function CatalogPage({
 
   const pickupLocationId = rawLoc;
 
+  const { data: catRows } = await admin
+    .from('garments')
+    .select('category')
+    .eq('organization_id', org.id)
+    .is('deleted_at', null);
+
+  const distinctCats = Array.from(new Set(catRows?.map((r) => r.category).filter(Boolean) as string[]));
+  const categoryValues = Array.from(
+    new Set([...CATALOG_CATEGORY_OPTIONS.map((o) => o.value), ...distinctCats]),
+  ).sort();
+  const categoryOptions = categoryValues.map((value) => ({
+    value,
+    label: CATALOG_CATEGORY_LABEL_BY_VALUE[value] ?? value,
+  }));
+
+  const { data: sizeRows } = await admin
+    .from('garments')
+    .select('size_label')
+    .eq('organization_id', org.id)
+    .is('deleted_at', null);
+
+  const distinctSizes = Array.from(new Set(sizeRows?.map((r) => r.size_label).filter(Boolean) as string[]));
+  const sizeOptions = Array.from(new Set([...(CATALOG_SIZE_OPTIONS as readonly string[]), ...distinctSizes])).sort();
+
+  const rawCategory = pickStr(searchParams, 'category');
+  const category =
+    rawCategory && categoryValues.includes(rawCategory) ? rawCategory : undefined;
+
+  const rawSize = pickStr(searchParams, 'size');
+  const sizeLabel = rawSize && sizeOptions.includes(rawSize) ? rawSize : undefined;
+
+  const maxPriceRaw = pickStr(searchParams, 'maxPrice');
+  const maxPriceParsed = maxPriceRaw ? Number(maxPriceRaw) : NaN;
+  const maxPrice =
+    maxPriceRaw !== undefined && !Number.isNaN(maxPriceParsed) && maxPriceParsed > 0 ? maxPriceParsed : undefined;
+
   const { data: garments, error } = await searchAvailableGarments({
     pickupDate,
     returnDate,
     pickupLocationId,
+    category,
+    sizeLabel,
+    maxPrice,
     limit: 50,
   });
+
+  const supabase = createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let favoriteIds: string[] = [];
+  if (user) {
+    const { data: favs } = await supabase.from('favorite_garments').select('garment_id').eq('user_id', user.id);
+    favoriteIds = favs?.map((f) => f.garment_id) ?? [];
+  }
 
   return (
     <div className="min-h-screen">
@@ -72,6 +134,13 @@ export default async function CatalogPage({
         initialReturnDate={returnDate}
         locations={locations}
         pickupLocationId={pickupLocationId}
+        initialCategory={category}
+        initialSize={sizeLabel}
+        initialMaxPrice={maxPrice}
+        categoryOptions={categoryOptions}
+        sizeOptions={sizeOptions}
+        favoriteIds={favoriteIds}
+        isLoggedIn={Boolean(user)}
       />
     </div>
   );

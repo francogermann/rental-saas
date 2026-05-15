@@ -98,6 +98,8 @@ export interface GarmentSummary {
     chest_cm: number | null;
     waist_cm: number | null;
     hip_cm: number | null;
+    /** Largo en cm (nullable si no se cargó en admin). */
+    length_cm?: number | null;
     tags: string[];
     style_group_id?: string | null;
     location_id?: string | null;

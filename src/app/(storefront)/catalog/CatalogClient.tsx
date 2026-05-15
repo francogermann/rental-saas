@@ -8,12 +8,14 @@ import Image from 'next/image';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useCart } from '@/components/cart/CartContext';
 import { formatUy } from '@/lib/utils';
+import { FavoriteHeart } from '@/components/catalog/FavoriteHeart';
 
 import type { GarmentSummary } from '@/types/domain';
 
 export type CatalogLocationOption = { id: string; name: string; address_line: string };
 
-// Filter options
+export type CatalogCategoryOption = { value: string; label: string };
+
 const EVENT_TYPES = [
   { value: 'graduación', label: 'Graduaciones' },
   { value: 'xv', label: 'Quinceañera / XV' },
@@ -24,18 +26,6 @@ const EVENT_TYPES = [
   { value: 'cocktail', label: 'Cóctel' },
   { value: 'gala', label: 'Gala' },
 ];
-
-const CATEGORIES = [
-  { value: 'Vestido Corto', label: 'Vestidos Cortos' },
-  { value: 'Vestido Midi', label: 'Vestidos Midi' },
-  { value: 'Vestido Largo', label: 'Vestidos Largos' },
-  { value: 'Conjunto', label: 'Conjuntos' },
-  { value: 'Mono', label: 'Monos' },
-  { value: 'Accesorio', label: 'Accesorios' },
-  { value: 'Calzado', label: 'Calzados' },
-];
-
-const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'Plus Size'];
 
 const COLORS = [
   { value: 'negro', label: 'Negro', hex: '#111' },
@@ -63,6 +53,13 @@ interface CatalogClientProps {
   initialReturnDate: string;
   locations: CatalogLocationOption[];
   pickupLocationId: string;
+  initialCategory?: string;
+  initialSize?: string;
+  initialMaxPrice?: number;
+  categoryOptions: CatalogCategoryOption[];
+  sizeOptions: string[];
+  favoriteIds: string[];
+  isLoggedIn: boolean;
 }
 
 export default function CatalogClient({
@@ -72,6 +69,13 @@ export default function CatalogClient({
   initialReturnDate,
   locations,
   pickupLocationId,
+  initialCategory,
+  initialSize,
+  initialMaxPrice,
+  categoryOptions,
+  sizeOptions,
+  favoriteIds,
+  isLoggedIn,
 }: CatalogClientProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -81,23 +85,41 @@ export default function CatalogClient({
   const [returnDate, setReturnDate] = useState(initialReturnDate);
   const [pickupLoc, setPickupLoc] = useState(pickupLocationId);
 
-  useEffect(() => {
-    setPickupDate(initialPickupDate);
-    setReturnDate(initialReturnDate);
-    setPickupLoc(pickupLocationId);
-  }, [initialPickupDate, initialReturnDate, pickupLocationId]);
-
-  const { addItem } = useCart();
-
   const [selectedEvents, setSelectedEvents] = useState<string[]>([]);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(() =>
+    initialCategory ? [initialCategory] : [],
+  );
+  const [selectedSizes, setSelectedSizes] = useState<string[]>(() => (initialSize ? [initialSize] : []));
+  const [maxPriceInput, setMaxPriceInput] = useState(initialMaxPrice != null ? String(initialMaxPrice) : '');
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState('recommended');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
+  useEffect(() => {
+    setPickupDate(initialPickupDate);
+    setReturnDate(initialReturnDate);
+    setPickupLoc(pickupLocationId);
+    setSelectedCategories(initialCategory ? [initialCategory] : []);
+    setSelectedSizes(initialSize ? [initialSize] : []);
+    setMaxPriceInput(initialMaxPrice != null ? String(initialMaxPrice) : '');
+  }, [initialPickupDate, initialReturnDate, pickupLocationId, initialCategory, initialSize, initialMaxPrice]);
+
+  const { addItem } = useCart();
+
   const toggleFilter = (arr: string[], val: string, setter: (v: string[]) => void) => {
-    setter(arr.includes(val) ? arr.filter(v => v !== val) : [...arr, val]);
+    setter(arr.includes(val) ? arr.filter((v) => v !== val) : [...arr, val]);
+  };
+
+  const pushCatalogUrl = () => {
+    const p = new URLSearchParams();
+    p.set('pickupLocationId', pickupLoc);
+    p.set('pickupDate', pickupDate);
+    p.set('returnDate', returnDate);
+    if (selectedCategories.length === 1) p.set('category', selectedCategories[0]);
+    if (selectedSizes.length === 1) p.set('size', selectedSizes[0]);
+    const mp = Number(maxPriceInput);
+    if (maxPriceInput.trim() && !Number.isNaN(mp) && mp > 0) p.set('maxPrice', String(Math.round(mp)));
+    router.push(`${pathname}?${p.toString()}`);
   };
 
   const clearAll = () => {
@@ -105,30 +127,31 @@ export default function CatalogClient({
     setSelectedCategories([]);
     setSelectedSizes([]);
     setSelectedColors([]);
+    setMaxPriceInput('');
+    const p = new URLSearchParams();
+    p.set('pickupLocationId', pickupLoc);
+    p.set('pickupDate', pickupDate);
+    p.set('returnDate', returnDate);
+    router.push(`${pathname}?${p.toString()}`);
   };
 
-  const applyDates = () => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('pickupLocationId', pickupLoc);
-    params.set('pickupDate', pickupDate);
-    params.set('returnDate', returnDate);
-    router.push(`${pathname}?${params.toString()}`);
-  };
-
-  const activeCount = selectedEvents.length + selectedCategories.length + selectedSizes.length + selectedColors.length;
+  const activeCount =
+    selectedEvents.length + selectedCategories.length + selectedSizes.length + selectedColors.length;
 
   const filtered = useMemo(() => {
     if (!garments) return [];
-    const filteredArray = garments.filter(g => {
-      // Event filter: match against tags or category
+    const filteredArray = garments.filter((g) => {
       if (selectedEvents.length > 0) {
-        const tags = (g.tags || []).map(t => t.toLowerCase());
+        const tags = (g.tags || []).map((t) => t.toLowerCase());
         const name = g.name.toLowerCase();
-        const matchesEvent = selectedEvents.some(ev => {
-          if (ev === 'boda-dia' || ev === 'boda-noche') return tags.includes('boda') || tags.includes('casamiento') || g.category?.toLowerCase() === 'casamiento';
-          if (ev === 'novia') return tags.includes('novia') || tags.includes('casamiento') || g.category?.toLowerCase() === 'casamiento';
+        const matchesEvent = selectedEvents.some((ev) => {
+          if (ev === 'boda-dia' || ev === 'boda-noche')
+            return tags.includes('boda') || tags.includes('casamiento') || g.category?.toLowerCase() === 'casamiento';
+          if (ev === 'novia')
+            return tags.includes('novia') || tags.includes('casamiento') || g.category?.toLowerCase() === 'casamiento';
           if (ev === 'fiesta-verano') return tags.includes('verano') || tags.includes('tropical') || tags.includes('floral');
-          if (ev === 'cocktail') return tags.includes('cocktail') || tags.includes('fiesta') || g.category?.toLowerCase() === 'fiesta';
+          if (ev === 'cocktail')
+            return tags.includes('cocktail') || tags.includes('fiesta') || g.category?.toLowerCase() === 'fiesta';
           if (ev === 'gala') return tags.includes('gala') || tags.includes('formal') || g.category?.toLowerCase() === 'gala';
           if (ev === 'xv') return tags.includes('xv') || tags.includes('quinceañera') || tags.includes('fiesta');
           return tags.includes(ev) || name.includes(ev) || g.category?.toLowerCase().includes(ev);
@@ -136,92 +159,76 @@ export default function CatalogClient({
         if (!matchesEvent) return false;
       }
 
-      // Category filter: match against category field
       if (selectedCategories.length > 0) {
-        const cat = g.category?.toLowerCase() || '';
-        const name = g.name.toLowerCase();
-        const matchesCat = selectedCategories.some(c => {
-          const cv = c.toLowerCase();
-          if (cv.includes('corto')) return cat.includes('fiesta') || name.includes('mini') || name.includes('corto');
-          if (cv.includes('midi')) return name.includes('midi');
-          if (cv.includes('largo')) return cat.includes('gala') || cat.includes('graduación') || cat.includes('casamiento') || name.includes('largo');
-          return cat.includes(cv) || name.includes(cv);
-        });
+        const matchesCat = selectedCategories.some((c) => g.category === c);
         if (!matchesCat) return false;
       }
 
-      // Size filter
       if (selectedSizes.length > 0) {
-        const sizeMatch = selectedSizes.some(s => {
+        const sizeMatch = selectedSizes.some((s) => {
           if (s === 'Plus Size') return g.size_label === 'XL' || g.size_label === 'XXL' || g.size_label === 'Plus Size';
           return g.size_label === s;
         });
         if (!sizeMatch) return false;
       }
 
-      // Color filter: match against tags or name
       if (selectedColors.length > 0) {
-        const tags = (g.tags || []).map(t => t.toLowerCase());
+        const tags = (g.tags || []).map((t) => t.toLowerCase());
         const name = g.name.toLowerCase();
-        const colorMatch = selectedColors.some(c => tags.includes(c) || name.includes(c));
+        const colorMatch = selectedColors.some((c) => tags.includes(c) || name.includes(c));
         if (!colorMatch) return false;
       }
 
       return true;
     });
 
-    // Handle Sort
     return filteredArray.sort((a, b) => {
-      if (sortBy === 'price_asc') {
-        return (a.rental_price || 0) - (b.rental_price || 0);
-      }
-      if (sortBy === 'price_desc') {
-        return (b.rental_price || 0) - (a.rental_price || 0);
-      }
-      if (sortBy === 'name_asc') {
-        return a.name.localeCompare(b.name);
-      }
-      if (sortBy === 'popular') {
-        // Mocking popularity for Demo using name length as a stable fake metric
-        return b.name.length - a.name.length;
-      }
-      // 'recommended' or default
+      if (sortBy === 'price_asc') return (a.rental_price || 0) - (b.rental_price || 0);
+      if (sortBy === 'price_desc') return (b.rental_price || 0) - (a.rental_price || 0);
+      if (sortBy === 'name_asc') return a.name.localeCompare(b.name);
+      if (sortBy === 'popular') return b.name.length - a.name.length;
       return 0;
     });
   }, [garments, selectedEvents, selectedCategories, selectedSizes, selectedColors, sortBy]);
 
-  const FilterSection = ({ title, count, children }: { title: string; count: number; children: React.ReactNode }) => {
+  const FilterSection = ({
+    title,
+    count,
+    children,
+  }: {
+    title: string;
+    count: number;
+    children: React.ReactNode;
+  }) => {
     const [isOpen, setIsOpen] = useState(false);
     return (
       <div className="border-b border-white/5 last:border-0">
-        <button 
-          onClick={() => setIsOpen(!isOpen)}
-          className="w-full flex items-center justify-between cursor-pointer py-3"
-        >
+        <button type="button" onClick={() => setIsOpen(!isOpen)} className="flex w-full cursor-pointer items-center justify-between py-3">
           <span className="text-xs font-semibold uppercase tracking-widest text-fuchsia-400">{title}</span>
           <div className="flex items-center gap-2">
             {count > 0 && (
-              <span className="w-4 h-4 flex items-center justify-center rounded-full bg-fuchsia-500 text-white text-[9px] font-bold">{count}</span>
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-fuchsia-500 text-[9px] font-bold text-white">
+                {count}
+              </span>
             )}
-            <span className={`text-muted-foreground text-xs transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>▾</span>
+            <span className={`text-xs text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
+              ▾
+            </span>
           </div>
         </button>
-        {isOpen && (
-          <div className="pb-4 pt-1">
-            {children}
-          </div>
-        )}
+        {isOpen && <div className="pb-4 pt-1">{children}</div>}
       </div>
     );
   };
 
   const FilterChip = ({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) => (
     <button
+      type="button"
       onClick={onClick}
-      className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-all duration-200 ${
+      className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
         active
-          ? 'bg-fuchsia-500/20 border-fuchsia-500/50 text-fuchsia-300'
-          : 'bg-white/[0.02] border-white/10 text-muted-foreground hover:border-white/20 hover:text-foreground'
+          ? 'border-fuchsia-500/50 bg-fuchsia-500/20 text-fuchsia-300'
+          : 'border-white/10 bg-white/[0.02] text-muted-foreground hover:border-white/20 hover:text-foreground'
       }`}
     >
       {label}
@@ -233,11 +240,11 @@ export default function CatalogClient({
       <FilterSection title="Fechas y sede" count={0}>
         <div className="flex flex-col gap-3">
           <div>
-            <label className="text-[10px] uppercase text-muted-foreground font-semibold mb-1 block">Sede de retiro</label>
+            <label className="mb-1 block text-[10px] font-semibold uppercase text-muted-foreground">Sede de retiro</label>
             <select
               value={pickupLoc}
               onChange={(e) => setPickupLoc(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-fuchsia-500/50"
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-fuchsia-500/50 focus:outline-none"
             >
               {locations.map((loc) => (
                 <option key={loc.id} value={loc.id}>
@@ -245,74 +252,109 @@ export default function CatalogClient({
                 </option>
               ))}
             </select>
-            <p className="text-[10px] text-muted-foreground mt-1 line-clamp-2">{locations.find((l) => l.id === pickupLoc)?.address_line}</p>
+            <p className="mt-1 line-clamp-2 text-[10px] text-muted-foreground">
+              {locations.find((l) => l.id === pickupLoc)?.address_line}
+            </p>
           </div>
           <div>
-            <label className="text-[10px] uppercase text-muted-foreground font-semibold mb-1 block">Retiro</label>
-            <input 
-              type="date" 
+            <label className="mb-1 block text-[10px] font-semibold uppercase text-muted-foreground">Retiro</label>
+            <input
+              type="date"
               value={pickupDate}
               onChange={(e) => setPickupDate(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-fuchsia-500/50"
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-fuchsia-500/50 focus:outline-none"
             />
           </div>
           <div>
-            <label className="text-[10px] uppercase text-muted-foreground font-semibold mb-1 block">Devolución</label>
-            <input 
-              type="date" 
+            <label className="mb-1 block text-[10px] font-semibold uppercase text-muted-foreground">Devolución</label>
+            <input
+              type="date"
               value={returnDate}
               onChange={(e) => setReturnDate(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-fuchsia-500/50"
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-fuchsia-500/50 focus:outline-none"
             />
           </div>
-          <button 
-            onClick={applyDates}
-            disabled={pickupDate >= returnDate}
-            className="mt-1 w-full bg-fuchsia-600 hover:bg-fuchsia-500 disabled:opacity-50 disabled:hover:bg-fuchsia-600 text-white rounded-lg py-2 text-xs font-bold uppercase tracking-wider transition-colors"
+          <div>
+            <label className="mb-1 block text-[10px] font-semibold uppercase text-muted-foreground">Precio máximo (UYU)</label>
+            <input
+              type="number"
+              min={0}
+              step={50}
+              placeholder="Sin tope"
+              value={maxPriceInput}
+              onChange={(e) => setMaxPriceInput(e.target.value)}
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-fuchsia-500/50 focus:outline-none"
+            />
+            <p className="mt-1 text-[10px] text-muted-foreground">
+              Un valor por vez en el servidor; podés refinar más con los chips de abajo.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={pushCatalogUrl}
+            disabled={pickupDate > returnDate}
+            className="mt-1 w-full rounded-lg bg-fuchsia-600 py-2 text-xs font-bold uppercase tracking-wider text-white transition-colors hover:bg-fuchsia-500 disabled:opacity-50 disabled:hover:bg-fuchsia-600"
           >
-            Aplicar sede y fechas
+            Aplicar fechas, sede y filtros
           </button>
         </div>
       </FilterSection>
 
       <FilterSection title="Evento" count={selectedEvents.length}>
         <div className="flex flex-wrap gap-2">
-          {EVENT_TYPES.map(e => (
-            <FilterChip key={e.value} label={e.label} active={selectedEvents.includes(e.value)} onClick={() => toggleFilter(selectedEvents, e.value, setSelectedEvents)} />
+          {EVENT_TYPES.map((e) => (
+            <FilterChip
+              key={e.value}
+              label={e.label}
+              active={selectedEvents.includes(e.value)}
+              onClick={() => toggleFilter(selectedEvents, e.value, setSelectedEvents)}
+            />
           ))}
         </div>
       </FilterSection>
 
       <FilterSection title="Categoría" count={selectedCategories.length}>
         <div className="flex flex-wrap gap-2">
-          {CATEGORIES.map(c => (
-            <FilterChip key={c.value} label={c.label} active={selectedCategories.includes(c.value)} onClick={() => toggleFilter(selectedCategories, c.value, setSelectedCategories)} />
+          {categoryOptions.map((c) => (
+            <FilterChip
+              key={c.value}
+              label={c.label}
+              active={selectedCategories.includes(c.value)}
+              onClick={() => toggleFilter(selectedCategories, c.value, setSelectedCategories)}
+            />
           ))}
         </div>
       </FilterSection>
 
       <FilterSection title="Talle" count={selectedSizes.length}>
         <div className="flex flex-wrap gap-2">
-          {SIZES.map(s => (
-            <FilterChip key={s} label={s} active={selectedSizes.includes(s)} onClick={() => toggleFilter(selectedSizes, s, setSelectedSizes)} />
+          {sizeOptions.map((s) => (
+            <FilterChip
+              key={s}
+              label={s}
+              active={selectedSizes.includes(s)}
+              onClick={() => toggleFilter(selectedSizes, s, setSelectedSizes)}
+            />
           ))}
         </div>
       </FilterSection>
 
-      <FilterSection title="Color" count={selectedColors.length}>
+      <FilterSection title="Color (tags)" count={selectedColors.length}>
+        <p className="mb-2 text-[10px] text-muted-foreground">Se cruza con etiquetas y nombre; no hay columna de color en la base.</p>
         <div className="flex flex-wrap gap-2">
-          {COLORS.map(c => (
+          {COLORS.map((c) => (
             <button
               key={c.value}
+              type="button"
               onClick={() => toggleFilter(selectedColors, c.value, setSelectedColors)}
-              className={`group flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-full border transition-all duration-200 ${
+              className={`group flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
                 selectedColors.includes(c.value)
-                  ? 'bg-fuchsia-500/20 border-fuchsia-500/50 text-fuchsia-300'
-                  : 'bg-white/[0.02] border-white/10 text-muted-foreground hover:border-white/20 hover:text-foreground'
+                  ? 'border-fuchsia-500/50 bg-fuchsia-500/20 text-fuchsia-300'
+                  : 'border-white/10 bg-white/[0.02] text-muted-foreground hover:border-white/20 hover:text-foreground'
               }`}
               title={c.label}
             >
-              <span className="w-3 h-3 rounded-full shrink-0 border border-white/20" style={{ backgroundColor: c.hex }} />
+              <span className="h-3 w-3 shrink-0 rounded-full border border-white/20" style={{ backgroundColor: c.hex }} />
               {c.label}
             </button>
           ))}
@@ -323,58 +365,57 @@ export default function CatalogClient({
 
   return (
     <div className="container mx-auto max-w-7xl px-6 pb-24">
-      {/* Top bar */}
-      <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-8">
+      <div className="mb-8 flex items-center justify-between border-b border-white/10 pb-4">
         <div className="flex items-center gap-3">
-          {/* Mobile filter toggle */}
           <button
+            type="button"
             onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
-            className="lg:hidden flex items-center gap-2 px-4 py-2 text-sm font-medium bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors"
+            className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium transition-colors hover:bg-white/10 lg:hidden"
           >
             <span>☰</span> Filtros
             {activeCount > 0 && (
-              <span className="w-5 h-5 flex items-center justify-center rounded-full bg-fuchsia-500 text-white text-[10px] font-bold">{activeCount}</span>
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-fuchsia-500 text-[10px] font-bold text-white">
+                {activeCount}
+              </span>
             )}
           </button>
-          <p className="text-sm text-muted-foreground hidden sm:block">Mostrando prendas disponibles</p>
+          <p className="hidden text-sm text-muted-foreground sm:block">Resultados según URL y disponibilidad</p>
         </div>
         <div className="flex items-center gap-3">
           {activeCount > 0 && (
-            <button onClick={clearAll} className="text-xs text-fuchsia-400 hover:text-fuchsia-300 transition-colors">
+            <button type="button" onClick={clearAll} className="text-xs text-fuchsia-400 transition-colors hover:text-fuchsia-300">
               Limpiar filtros ✕
             </button>
           )}
-          <span className="text-sm font-medium bg-white/5 backdrop-blur-sm border border-white/10 px-4 py-1.5 rounded-full">
+          <span className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm font-medium backdrop-blur-sm">
             {filtered.length} resultado{filtered.length !== 1 ? 's' : ''}
           </span>
         </div>
       </div>
 
       {error && (
-        <div className="rounded-2xl bg-destructive/10 text-destructive border border-destructive/20 p-6 mb-8">
-          {error}
-        </div>
+        <div className="mb-8 rounded-2xl border border-destructive/20 bg-destructive/10 p-6 text-destructive">{error}</div>
       )}
 
-      {/* Mobile filters drawer */}
       {mobileFiltersOpen && (
-        <div className="lg:hidden mb-8 bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="mb-8 rounded-2xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl lg:hidden">
+          <div className="mb-4 flex items-center justify-between">
             <h3 className="font-display text-lg font-semibold">Filtros</h3>
-            <button onClick={() => setMobileFiltersOpen(false)} className="text-muted-foreground hover:text-foreground text-lg">✕</button>
+            <button type="button" onClick={() => setMobileFiltersOpen(false)} className="text-lg text-muted-foreground hover:text-foreground">
+              ✕
+            </button>
           </div>
           {filtersContent}
         </div>
       )}
 
       <div className="flex gap-10">
-        {/* Desktop Sidebar */}
-        <aside className="hidden lg:block w-64 shrink-0">
-          <div className="sticky top-24 bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-            <div className="flex items-center justify-between mb-6">
+        <aside className="hidden w-64 shrink-0 lg:block">
+          <div className="sticky top-24 rounded-2xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl">
+            <div className="mb-6 flex items-center justify-between">
               <h3 className="font-display text-lg font-semibold">Filtros</h3>
               {activeCount > 0 && (
-                <button onClick={clearAll} className="text-xs text-fuchsia-400 hover:text-fuchsia-300">
+                <button type="button" onClick={clearAll} className="text-xs text-fuchsia-400 hover:text-fuchsia-300">
                   Limpiar
                 </button>
               )}
@@ -383,107 +424,147 @@ export default function CatalogClient({
           </div>
         </aside>
 
-        {/* Product Grid */}
         <div className="flex-1">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-            <p className="text-muted-foreground text-sm">
-              Mostrando <span className="text-foreground font-semibold">{filtered.length}</span> resultados
+          <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <p className="text-sm text-muted-foreground">
+              Mostrando <span className="font-semibold text-foreground">{filtered.length}</span> resultados
             </p>
             <div className="flex items-center gap-2">
-              <label htmlFor="sort" className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Ordenar por</label>
-              <select 
+              <label htmlFor="sort" className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Ordenar por
+              </label>
+              <select
                 id="sort"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-sm outline-none focus:border-fuchsia-500/50 text-foreground cursor-pointer"
+                className="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-foreground outline-none focus:border-fuchsia-500/50"
               >
-                <option value="recommended" className="text-black">Destacados</option>
-                <option value="popular" className="text-black">Más Reservados</option>
-                <option value="price_asc" className="text-black">Menor Precio</option>
-                <option value="price_desc" className="text-black">Mayor Precio</option>
-                <option value="name_asc" className="text-black">Nombre (A-Z)</option>
+                <option value="recommended" className="text-black">
+                  Destacados
+                </option>
+                <option value="popular" className="text-black">
+                  Más Reservados
+                </option>
+                <option value="price_asc" className="text-black">
+                  Menor Precio
+                </option>
+                <option value="price_desc" className="text-black">
+                  Mayor Precio
+                </option>
+                <option value="name_asc" className="text-black">
+                  Nombre (A-Z)
+                </option>
               </select>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filtered.map((g) => (
-              <Card key={g.id} className="group overflow-hidden bg-white/[0.03] backdrop-blur-xl border-white/10 rounded-3xl shadow-2xl hover:shadow-glow hover:border-fuchsia-500/30 transition-all duration-500 flex flex-col">
-                <div className="relative aspect-[3/4] bg-muted overflow-hidden">
-                  {g.photos_urls && g.photos_urls.length > 0 ? (
-                    <Image 
-                      src={g.photos_urls[0]} 
-                      alt={g.name}
-                      fill
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      className="object-cover transition-transform duration-700 group-hover:scale-110"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-secondary/30 text-muted-foreground">
-                      <span className="text-xl opacity-50">✦</span>
-                      <span className="text-xs uppercase tracking-widest mt-2 opacity-50">Sin foto</span>
-                    </div>
-                  )}
-                  
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+            {filtered.map((g) => {
+              const redirectPath = `${pathname}?${searchParams.toString()}`;
+              return (
+                <Card
+                  key={g.id}
+                  className="group flex flex-col overflow-hidden rounded-3xl border-white/10 bg-white/[0.03] shadow-2xl backdrop-blur-xl transition-all duration-500 hover:border-fuchsia-500/30 hover:shadow-glow"
+                >
+                  <div className="relative aspect-[3/4] overflow-hidden bg-muted">
+                    {g.photos_urls && g.photos_urls.length > 0 ? (
+                      <Image
+                        src={g.photos_urls[0]}
+                        alt={g.name}
+                        fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        className="object-cover transition-transform duration-700 group-hover:scale-110"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-secondary/30 text-muted-foreground">
+                        <span className="text-xl opacity-50">✦</span>
+                        <span className="mt-2 text-xs uppercase tracking-widest opacity-50">Sin foto</span>
+                      </div>
+                    )}
 
-                  <div className="absolute top-4 left-4 flex flex-wrap gap-2 pr-3">
-                    {g.category && (
-                      <Badge variant="secondary" className="bg-black/50 backdrop-blur-md border-white/10 text-white/90 shadow-lg">
-                        {g.category}
-                      </Badge>
-                    )}
-                    {g.size_label && (
-                      <Badge variant="outline" className="bg-black/50 backdrop-blur-md border-fuchsia-500/30 text-fuchsia-300 shadow-lg">
-                        Talle {g.size_label}
-                      </Badge>
-                    )}
-                    {g.location_name && (
-                      <Badge variant="outline" className="bg-black/50 backdrop-blur-md border-white/20 text-white/85 shadow-lg max-w-[11rem] truncate" title={g.location_name}>
-                        {g.location_name}
-                      </Badge>
-                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+
+                    <div className="absolute right-3 top-3 z-10">
+                      <FavoriteHeart
+                        garmentId={g.id}
+                        initialFavorited={favoriteIds.includes(g.id)}
+                        isLoggedIn={isLoggedIn}
+                        redirectPath={redirectPath}
+                      />
+                    </div>
+
+                    <div className="absolute left-4 top-4 flex flex-wrap gap-2 pr-14">
+                      {g.category && (
+                        <Badge variant="secondary" className="border-white/10 bg-black/50 text-white/90 shadow-lg backdrop-blur-md">
+                          {g.category}
+                        </Badge>
+                      )}
+                      {g.size_label && (
+                        <Badge variant="outline" className="border-fuchsia-500/30 bg-black/50 text-fuchsia-300 shadow-lg backdrop-blur-md">
+                          Talle {g.size_label}
+                        </Badge>
+                      )}
+                      {g.length_cm != null && g.length_cm > 0 && (
+                        <Badge variant="outline" className="border-white/20 bg-black/50 text-white/85 shadow-lg backdrop-blur-md">
+                          Largo {g.length_cm} cm
+                        </Badge>
+                      )}
+                      {g.location_name && (
+                        <Badge
+                          variant="outline"
+                          className="max-w-[11rem] truncate border-white/20 bg-black/50 text-white/85 shadow-lg backdrop-blur-md"
+                          title={g.location_name}
+                        >
+                          {g.location_name}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                </div>
-                
-                <CardContent className="p-5 flex-grow">
-                  <h3 className="font-display text-base font-semibold line-clamp-1">{g.name}</h3>
-                  <p className="text-muted-foreground text-xs mt-1 uppercase tracking-wider">SKU: {g.sku}</p>
-                </CardContent>
-                
-                <CardFooter className="p-5 pt-0 flex justify-between items-end">
-                  <div className="flex flex-col">
-                    <span className="text-xs font-medium text-muted-foreground mb-0.5">Alquiler</span>
-                    <span className="font-bold text-lg">{formatUy(g.rental_price)}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={() => addItem({ garment: g, pickupDate, returnDate, pickupLocationId: pickupLoc })}
-                      className="rounded-2xl bg-white/5 border border-white/10 text-white hover:bg-white/10 active:scale-95 px-4 py-2 transition-all duration-300 text-sm font-semibold"
-                    >
-                      Añadir
-                    </button>
-                    <Link
-                      href={`/catalog/${g.id}?pickupLocationId=${encodeURIComponent(pickupLoc)}&pickupDate=${encodeURIComponent(pickupDate)}&returnDate=${encodeURIComponent(returnDate)}`}
-                      className="rounded-2xl bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white hover:scale-[1.02] active:scale-95 px-4 py-2 transition-all duration-300 text-sm font-semibold shadow-glow hover:shadow-glow-lg"
-                    >
-                      Detalles
-                    </Link>
-                  </div>
-                </CardFooter>
-              </Card>
-            ))}
+
+                  <CardContent className="flex-grow p-5">
+                    <h3 className="font-display line-clamp-1 text-base font-semibold">{g.name}</h3>
+                    <p className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">SKU: {g.sku}</p>
+                  </CardContent>
+
+                  <CardFooter className="flex items-end justify-between p-5 pt-0">
+                    <div className="flex flex-col">
+                      <span className="mb-0.5 text-xs font-medium text-muted-foreground">Alquiler</span>
+                      <span className="text-lg font-bold">{formatUy(g.rental_price)}</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => addItem({ garment: g, pickupDate, returnDate, pickupLocationId: pickupLoc })}
+                        className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition-all duration-300 hover:bg-white/10 active:scale-95"
+                      >
+                        Añadir
+                      </button>
+                      <Link
+                        href={`/catalog/${g.id}?pickupLocationId=${encodeURIComponent(pickupLoc)}&pickupDate=${encodeURIComponent(pickupDate)}&returnDate=${encodeURIComponent(returnDate)}`}
+                        className="rounded-2xl bg-gradient-to-r from-fuchsia-500 to-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-glow transition-all duration-300 hover:scale-[1.02] hover:shadow-glow-lg active:scale-95"
+                      >
+                        Detalles
+                      </Link>
+                    </div>
+                  </CardFooter>
+                </Card>
+              );
+            })}
           </div>
 
           {filtered.length === 0 && !error && (
-            <div className="py-24 text-center flex flex-col items-center justify-center opacity-60">
-              <div className="w-20 h-20 rounded-full bg-fuchsia-500/10 flex items-center justify-center mb-6 shadow-glow">
+            <div className="flex flex-col items-center justify-center py-24 text-center opacity-60">
+              <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-fuchsia-500/10 shadow-glow">
                 <span className="text-3xl">✦</span>
               </div>
-              <p className="text-xl font-display font-medium tracking-tight">No encontramos prendas</p>
-              <p className="text-sm mt-2 max-w-sm text-muted-foreground">Probá ajustando los filtros para encontrar lo que buscás.</p>
+              <p className="font-display text-xl font-medium tracking-tight">No encontramos prendas</p>
+              <p className="mt-2 max-w-sm text-sm text-muted-foreground">Probá ajustando los filtros o las fechas.</p>
               {activeCount > 0 && (
-                <button onClick={clearAll} className="mt-4 text-sm text-fuchsia-400 hover:text-fuchsia-300 transition-colors underline underline-offset-4">
+                <button
+                  type="button"
+                  onClick={clearAll}
+                  className="mt-4 text-sm text-fuchsia-400 underline underline-offset-4 transition-colors hover:text-fuchsia-300"
+                >
                   Limpiar todos los filtros
                 </button>
               )}

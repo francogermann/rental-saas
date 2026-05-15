@@ -4,6 +4,7 @@ import { requireAdminPagePermission } from '@/lib/admin-auth-server';
 import { adminHasPermission } from '@/lib/admin-permissions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { ProcessWaitlistButton } from '@/components/admin/ProcessWaitlistButton';
 
 type UpcomingReservationRow = {
   id: string;
@@ -131,6 +132,23 @@ export default async function AdminDashboardPage({
           </CardContent>
         </Card>
       </div>
+
+      {canWriteRes ? (
+        <Card className="border-white/10 bg-white/[0.02] shadow-xl">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
+              Lista de espera (catálogo)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              Enviá avisos por email cuando una prenda vuelva a estar libre para el rango elegido. No requiere Vercel Cron:
+              podés usar este botón o un cron gratuito externo contra <code className="text-fuchsia-300/90">/api/cron/waitlist</code>.
+            </p>
+            <ProcessWaitlistButton />
+          </CardContent>
+        </Card>
+      ) : null}
 
       {/* Action Items List */}
       <div className="bg-white/[0.02] backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden shadow-2xl">

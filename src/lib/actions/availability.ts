@@ -29,7 +29,7 @@ const AvailabilitySearchSchema = z.object({
     sizeLabel: z.string().min(1).max(10).optional(),
     chestCm: z.number().int().min(60).max(160).optional(),
     waistCm: z.number().int().min(40).max(140).optional(),
-    category: z.string().min(1).max(50).optional(),
+    category: z.string().min(1).max(100).optional(),
     maxPrice: z.number().positive().optional(),
     limit: z.number().int().min(1).max(100).default(48),
     offset: z.number().int().min(0).default(0),
