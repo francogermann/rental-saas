@@ -11,9 +11,15 @@ import { formatUy } from '@/lib/utils';
 import { FavoriteHeart } from '@/components/catalog/FavoriteHeart';
 import { CatalogFilterChip, CatalogFilterSection } from '@/components/catalog/CatalogFilterSection';
 import { listCatalogGarments, searchAvailableGarments } from '@/lib/actions/availability';
+import { checkGarmentAvailabilityAction } from '@/lib/actions/cart-availability';
 import { resolvePickupLocationForGarment } from '@/lib/catalog-pickup-location';
 import { CATALOG_FETCH_SIZE, CATALOG_PAGE_SIZE } from '@/lib/catalog-pagination';
 import { primaryPhotoUrl } from '@/lib/photo-urls';
+import {
+  buildCatalogDateQuery,
+  deriveRentalRangeFromEventDate,
+  formatEventDateEs,
+} from '@/lib/catalog/event-date-range';
 
 import type { GarmentSummary } from '@/types/domain';
 
@@ -112,6 +118,7 @@ interface CatalogClientProps {
   garments: GarmentSummary[];
   initialHasMore: boolean;
   error: string | null;
+  initialEventDate: string | null;
   initialPickupDate: string;
   initialReturnDate: string;
   locations: CatalogLocationOption[];
@@ -124,12 +131,14 @@ interface CatalogClientProps {
   favoriteIds: string[];
   isLoggedIn: boolean;
   initialAvailableOnly: boolean;
+  showAllCatalog?: boolean;
 }
 
 export default function CatalogClient({
   garments,
   initialHasMore,
   error,
+  initialEventDate,
   initialPickupDate,
   initialReturnDate,
   locations,
@@ -142,6 +151,7 @@ export default function CatalogClient({
   favoriteIds,
   isLoggedIn,
   initialAvailableOnly,
+  showAllCatalog = false,
 }: CatalogClientProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -149,6 +159,7 @@ export default function CatalogClient({
 
   const initialLoc = pickupLocationId ?? '';
 
+  const [draftEventDate, setDraftEventDate] = useState(initialEventDate ?? '');
   const [draftPickupDate, setDraftPickupDate] = useState(initialPickupDate);
   const [draftReturnDate, setDraftReturnDate] = useState(initialReturnDate);
   const [draftPickupLoc, setDraftPickupLoc] = useState(initialLoc);
@@ -163,6 +174,7 @@ export default function CatalogClient({
   );
   const [draftColors, setDraftColors] = useState<string[]>([]);
 
+  const [appliedEventDate, setAppliedEventDate] = useState(initialEventDate ?? '');
   const [appliedPickupDate, setAppliedPickupDate] = useState(initialPickupDate);
   const [appliedReturnDate, setAppliedReturnDate] = useState(initialReturnDate);
   const [appliedPickupLoc, setAppliedPickupLoc] = useState(initialLoc);
@@ -190,6 +202,7 @@ export default function CatalogClient({
 
   useEffect(() => {
     const loc = pickupLocationId ?? '';
+    setAppliedEventDate(initialEventDate ?? '');
     setAppliedPickupDate(initialPickupDate);
     setAppliedReturnDate(initialReturnDate);
     setAppliedPickupLoc(loc);
@@ -197,6 +210,7 @@ export default function CatalogClient({
     setAppliedCategories(initialCategory ? [initialCategory] : []);
     setAppliedSizes(initialSize ? [initialSize] : []);
 
+    setDraftEventDate(initialEventDate ?? '');
     setDraftPickupDate(initialPickupDate);
     setDraftReturnDate(initialReturnDate);
     setDraftPickupLoc(loc);
@@ -205,6 +219,7 @@ export default function CatalogClient({
     setDraftSizes(initialSize ? [initialSize] : []);
     setDraftMaxPriceInput(initialMaxPrice != null ? String(initialMaxPrice) : '');
   }, [
+    initialEventDate,
     initialPickupDate,
     initialReturnDate,
     pickupLocationId,
@@ -215,6 +230,28 @@ export default function CatalogClient({
   ]);
 
   const { addItem } = useCart();
+  const [addError, setAddError] = useState<string | null>(null);
+  const [checkingGarmentId, setCheckingGarmentId] = useState<string | null>(null);
+
+  const handleAddToCart = useCallback(
+    async (g: GarmentSummary, pickupLoc: string) => {
+      setAddError(null);
+      setCheckingGarmentId(g.id);
+      const check = await checkGarmentAvailabilityAction(g.id, appliedPickupDate, appliedReturnDate);
+      setCheckingGarmentId(null);
+      if (!check.available) {
+        setAddError(check.message ?? 'Esta prenda no está disponible para las fechas seleccionadas.');
+        return;
+      }
+      addItem({
+        garment: g,
+        pickupDate: appliedPickupDate,
+        returnDate: appliedReturnDate,
+        pickupLocationId: pickupLoc,
+      });
+    },
+    [addItem, appliedPickupDate, appliedReturnDate],
+  );
 
   const buildListParams = useCallback(
     (offset: number) => ({
@@ -278,20 +315,41 @@ export default function CatalogClient({
   };
 
   const applyFilters = () => {
+    let pickup = draftPickupDate;
+    let ret = draftReturnDate;
+    const eventDate = draftEventDate.trim();
+
+    if (eventDate) {
+      const derived = deriveRentalRangeFromEventDate(eventDate);
+      if (!derived.ok) {
+        setAddError(derived.error);
+        return;
+      }
+      pickup = derived.range.pickupDate;
+      ret = derived.range.returnDate;
+    }
+
+    setAddError(null);
     setAppliedEvents(draftEvents);
     setAppliedCategories(draftCategories);
     setAppliedSizes(draftSizes);
     setAppliedColors(draftColors);
     setAppliedPickupLoc(draftPickupLoc);
-    setAppliedPickupDate(draftPickupDate);
-    setAppliedReturnDate(draftReturnDate);
+    setAppliedEventDate(eventDate);
+    setAppliedPickupDate(pickup);
+    setAppliedReturnDate(ret);
     setAppliedFilterByAvailability(draftFilterByAvailability);
 
     const p = new URLSearchParams();
-    p.set('pickupDate', draftPickupDate);
-    p.set('returnDate', draftReturnDate);
+    if (eventDate) p.set('eventDate', eventDate);
+    p.set('pickupDate', pickup);
+    p.set('returnDate', ret);
     if (draftPickupLoc) p.set('pickupLocationId', draftPickupLoc);
-    if (draftFilterByAvailability) p.set('availableOnly', '1');
+    if (draftFilterByAvailability) {
+      p.set('availableOnly', '1');
+    } else {
+      p.set('showAll', '1');
+    }
     if (draftCategories.length === 1) p.set('category', draftCategories[0]);
     if (draftSizes.length === 1) p.set('size', draftSizes[0]);
     const mp = Number(draftMaxPriceInput);
@@ -299,6 +357,10 @@ export default function CatalogClient({
 
     router.push(`${pathname}?${p.toString()}`);
     setMobileFiltersOpen(false);
+  };
+
+  const handleChangeEventDate = () => {
+    router.push(pathname);
   };
 
   const clearAll = () => {
@@ -361,6 +423,30 @@ export default function CatalogClient({
       <CatalogFilterSection title="Fechas y sede" count={0} defaultOpen>
         <div className="flex flex-col gap-3">
           <div>
+            <label className="mb-1 block text-[10px] font-semibold uppercase text-muted-foreground">
+              Fecha de tu evento
+            </label>
+            <input
+              type="date"
+              value={draftEventDate}
+              onChange={(e) => {
+                const next = e.target.value;
+                setDraftEventDate(next);
+                if (next) {
+                  const derived = deriveRentalRangeFromEventDate(next);
+                  if (derived.ok) {
+                    setDraftPickupDate(derived.range.pickupDate);
+                    setDraftReturnDate(derived.range.returnDate);
+                  }
+                }
+              }}
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-foreground focus:border-fuchsia-500/50 focus:outline-none"
+            />
+            <p className="mt-1 text-[10px] text-muted-foreground">
+              Retiro y devolución: día anterior y día siguiente al evento (podés ajustarlos abajo).
+            </p>
+          </div>
+          <div>
             <label className="mb-1 block text-[10px] font-semibold uppercase text-muted-foreground">Sede de retiro</label>
             <select
               value={draftPickupLoc}
@@ -415,20 +501,36 @@ export default function CatalogClient({
               Un valor por vez en el servidor; podés refinar más con los chips de abajo.
             </p>
           </div>
-          <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2.5">
-            <input
-              type="checkbox"
-              checked={draftFilterByAvailability}
-              onChange={(e) => setDraftFilterByAvailability(e.target.checked)}
-              className="mt-0.5 h-4 w-4 rounded border-white/20 bg-white/5 text-fuchsia-600 focus:ring-fuchsia-500/50"
-            />
-            <span className="text-xs leading-snug text-muted-foreground">
-              Solo disponibles para estas fechas
-              <span className="mt-0.5 block text-[10px] opacity-80">
-                Si no marcás, ves toda la colección publicable; las fechas se usan al reservar.
+          {showAllCatalog ? (
+            <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2.5">
+              <input
+                type="checkbox"
+                checked={draftFilterByAvailability}
+                onChange={(e) => setDraftFilterByAvailability(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-white/20 bg-white/5 text-fuchsia-600 focus:ring-fuchsia-500/50"
+              />
+              <span className="text-xs leading-snug text-muted-foreground">
+                Solo disponibles para estas fechas
               </span>
-            </span>
-          </label>
+            </label>
+          ) : (
+            <p className="text-[10px] text-muted-foreground">
+              Mostrando solo vestidos disponibles para tu evento.{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  setDraftFilterByAvailability(false);
+                  const p = new URLSearchParams(searchParams.toString());
+                  p.set('showAll', '1');
+                  p.delete('availableOnly');
+                  router.push(`${pathname}?${p.toString()}`);
+                }}
+                className="text-fuchsia-400 underline hover:text-fuchsia-300"
+              >
+                Ver toda la colección
+              </button>
+            </p>
+          )}
         </div>
       </CatalogFilterSection>
 
@@ -566,6 +668,40 @@ export default function CatalogClient({
 
         <div className="flex-1">
           <div className="mb-6 flex flex-col gap-3">
+            <div className="flex flex-col gap-3 rounded-2xl border border-fuchsia-500/25 bg-fuchsia-500/10 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-sm">
+                {appliedEventDate ? (
+                  <>
+                    <span className="font-medium text-fuchsia-200">Tu evento: </span>
+                    {formatEventDateEs(appliedEventDate)}
+                  </>
+                ) : (
+                  <span className="font-medium text-fuchsia-200">Fechas de alquiler seleccionadas</span>
+                )}
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Retiro {formatEventDateEs(appliedPickupDate)} · Devolución {formatEventDateEs(appliedReturnDate)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleChangeEventDate}
+                className="shrink-0 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold text-foreground transition hover:bg-white/10"
+              >
+                Cambiar fecha del evento
+              </button>
+            </div>
+
+            {showAllCatalog ? (
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100/90">
+                Estás viendo toda la colección. Algunas prendas pueden no estar disponibles para tus fechas.
+              </div>
+            ) : null}
+
+            {addError ? (
+              <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                {addError}
+              </div>
+            ) : null}
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
               <p className="text-sm text-muted-foreground">
                 Mostrando <span className="font-semibold text-foreground">{filtered.length}</span> resultados
@@ -683,20 +819,21 @@ export default function CatalogClient({
                     <div className="flex gap-2">
                       <button
                         type="button"
-                        onClick={() =>
-                          addItem({
-                            garment: g,
-                            pickupDate: appliedPickupDate,
-                            returnDate: appliedReturnDate,
-                            pickupLocationId: garmentPickupLoc,
-                          })
-                        }
-                        className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition-all duration-300 hover:bg-white/10 active:scale-95"
+                        disabled={checkingGarmentId === g.id}
+                        onClick={() => void handleAddToCart(g, garmentPickupLoc)}
+                        className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition-all duration-300 hover:bg-white/10 active:scale-95 disabled:opacity-50"
                       >
-                        Añadir
+                        {checkingGarmentId === g.id ? '…' : 'Añadir'}
                       </button>
                       <Link
-                        href={`/catalog/${g.id}?pickupLocationId=${encodeURIComponent(garmentPickupLoc)}&pickupDate=${encodeURIComponent(appliedPickupDate)}&returnDate=${encodeURIComponent(appliedReturnDate)}`}
+                        href={`/catalog/${g.id}?${buildCatalogDateQuery({
+                          eventDate: appliedEventDate || null,
+                          pickupDate: appliedPickupDate,
+                          returnDate: appliedReturnDate,
+                          pickupLocationId: garmentPickupLoc,
+                          availableOnly: appliedFilterByAvailability,
+                          showAll: showAllCatalog,
+                        })}`}
                         className="rounded-2xl bg-gradient-to-r from-fuchsia-500 to-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-glow transition-all duration-300 hover:scale-[1.02] hover:shadow-glow-lg active:scale-95"
                       >
                         Detalles

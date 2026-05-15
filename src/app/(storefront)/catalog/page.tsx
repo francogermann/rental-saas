@@ -9,17 +9,18 @@ import {
   CATALOG_SIZE_OPTIONS,
 } from '@/lib/catalog-taxonomy';
 import { CATALOG_FETCH_SIZE, CATALOG_PAGE_SIZE } from '@/lib/catalog-pagination';
+import { CatalogEventDateGate } from '@/components/catalog/CatalogEventDateGate';
+import {
+  hasCatalogEventContext,
+  parseShowAllCatalog,
+  resolveCatalogDatesFromSearchParams,
+} from '@/lib/catalog/event-date-range';
 
 function pickStr(sp: Record<string, string | string[] | undefined>, key: string): string | undefined {
   const v = sp[key];
   if (typeof v !== 'string') return undefined;
   const t = v.trim();
   return t.length ? t : undefined;
-}
-
-function parseAvailableOnly(sp: Record<string, string | string[] | undefined>): boolean {
-  const v = pickStr(sp, 'availableOnly');
-  return v === '1' || v === 'true';
 }
 
 export default async function CatalogPage({
@@ -46,17 +47,50 @@ export default async function CatalogPage({
     return <div className="p-8 text-center text-muted-foreground">No hay sedes configuradas.</div>;
   }
 
-  const today = toLocalYmdString(new Date());
-  const defaultReturn = toLocalYmdString(new Date(Date.now() + 86400000 * 3));
-  const pickupDate = typeof searchParams.pickupDate === 'string' ? searchParams.pickupDate : today;
-  const returnDate = typeof searchParams.returnDate === 'string' ? searchParams.returnDate : defaultReturn;
-  const availableOnly = parseAvailableOnly(searchParams);
-
   const rawLoc = typeof searchParams.pickupLocationId === 'string' ? searchParams.pickupLocationId.trim() : '';
   const pickupLocationId =
     rawLoc && z.string().uuid().safeParse(rawLoc).success && locations.some((l) => l.id === rawLoc)
       ? rawLoc
       : undefined;
+
+  const catalogHeader = (
+    <section className="relative overflow-hidden px-6 py-16 text-center sm:py-20">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,hsl(315_100%_60%/.12),transparent_50%)]" />
+      <div className="relative z-10 mx-auto max-w-3xl">
+        <h1 className="mb-4 bg-gradient-to-r from-fuchsia-400 via-pink-300 to-purple-400 bg-clip-text font-display text-4xl font-bold tracking-tight text-transparent md:text-5xl">
+          Nuestra Colección
+        </h1>
+        <p className="mx-auto max-w-xl text-lg leading-relaxed text-muted-foreground">
+          Vestidos de fiesta, graduación, casamiento y gala.
+        </p>
+      </div>
+    </section>
+  );
+
+  if (!hasCatalogEventContext(searchParams)) {
+    return (
+      <div className="min-h-screen">
+        {catalogHeader}
+        <CatalogEventDateGate locations={locations} defaultLocationId={pickupLocationId} />
+      </div>
+    );
+  }
+
+  const today = toLocalYmdString(new Date());
+  const datesResolved = resolveCatalogDatesFromSearchParams(searchParams, today);
+  if (!datesResolved.ok) {
+    return (
+      <div className="min-h-screen">
+        {catalogHeader}
+        <p className="px-6 pb-12 text-center text-destructive">{datesResolved.error}</p>
+        <CatalogEventDateGate locations={locations} defaultLocationId={pickupLocationId} />
+      </div>
+    );
+  }
+
+  const { eventDate, pickupDate, returnDate } = datesResolved;
+  const showAll = parseShowAllCatalog(searchParams);
+  const availableOnly = !showAll;
 
   const { data: catRows } = await admin
     .from('garments')
@@ -128,22 +162,13 @@ export default async function CatalogPage({
 
   return (
     <div className="min-h-screen">
-      <section className="py-24 px-6 text-center relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,hsl(315_100%_60%/.12),transparent_50%)]" />
-        <div className="relative z-10 max-w-3xl mx-auto">
-          <h1 className="font-display text-4xl md:text-6xl font-bold tracking-tight mb-6 bg-gradient-to-r from-fuchsia-400 via-pink-300 to-purple-400 bg-clip-text text-transparent">
-            Nuestra Colección
-          </h1>
-          <p className="text-lg text-muted-foreground leading-relaxed max-w-xl mx-auto">
-            Vestidos de fiesta, graduación, casamiento y gala. Encontrá el tuyo y reservalo sin agenda previa.
-          </p>
-        </div>
-      </section>
+      {catalogHeader}
 
       <CatalogClient
         garments={garments}
         initialHasMore={initialHasMore}
         error={error}
+        initialEventDate={eventDate}
         initialPickupDate={pickupDate}
         initialReturnDate={returnDate}
         locations={locations}
@@ -156,6 +181,7 @@ export default async function CatalogPage({
         favoriteIds={favoriteIds}
         isLoggedIn={Boolean(user)}
         initialAvailableOnly={availableOnly}
+        showAllCatalog={showAll}
       />
     </div>
   );

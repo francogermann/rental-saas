@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { DayPicker, type DateRange } from 'react-day-picker';
 import { es } from 'date-fns/locale';
 import { startOfDay, format } from 'date-fns';
@@ -13,6 +13,8 @@ interface GarmentDateRangePickerProps {
     garmentId: string;
     minDays?: number;
     maxDays?: number;
+    initialPickupDate?: string;
+    initialReturnDate?: string;
     onRangeSelect: (range: { pickupDate: string; returnDate: string } | null) => void;
 }
 
@@ -20,10 +22,17 @@ export function GarmentDateRangePicker({
     garmentId,
     minDays = 1,
     maxDays = 30,
+    initialPickupDate,
+    initialReturnDate,
     onRangeSelect,
 }: GarmentDateRangePickerProps) {
     const [range, setRange] = useState<DateRange | undefined>();
+    const initialAppliedRef = useRef(false);
     const { blockedRanges, isLoading, error } = useAvailability({ garmentId });
+
+    useEffect(() => {
+        initialAppliedRef.current = false;
+    }, [garmentId, initialPickupDate, initialReturnDate]);
 
     const today = useMemo(() => startOfDay(new Date()), []);
 
@@ -58,6 +67,35 @@ export function GarmentDateRangePicker({
             parsedBlocks.some(b => from <= b.to && to >= b.from),
         [parsedBlocks],
     );
+
+    useEffect(() => {
+        if (initialAppliedRef.current) return;
+        if (!initialPickupDate || !initialReturnDate || isLoading || error) return;
+
+        const from = startOfDay(parseLocalYmd(initialPickupDate));
+        const to = startOfDay(parseLocalYmd(initialReturnDate));
+        const days = Math.round((to.getTime() - from.getTime()) / 86_400_000) + 1;
+
+        if (days < minDays || days > maxDays || rangeContainsBlockedDay(from, to)) {
+            return;
+        }
+
+        initialAppliedRef.current = true;
+        setRange({ from, to });
+        onRangeSelect({
+            pickupDate: initialPickupDate,
+            returnDate: initialReturnDate,
+        });
+    }, [
+        initialPickupDate,
+        initialReturnDate,
+        isLoading,
+        error,
+        minDays,
+        maxDays,
+        rangeContainsBlockedDay,
+        onRangeSelect,
+    ]);
 
     const handleSelect = useCallback(
         (selected: DateRange | undefined) => {

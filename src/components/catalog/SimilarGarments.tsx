@@ -3,16 +3,25 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { primaryPhotoUrl } from '@/lib/photo-urls';
 import { formatUy } from '@/lib/utils';
+import { buildCatalogDateQuery } from '@/lib/catalog/event-date-range';
 import type { GarmentSummary } from '@/types/domain';
 
 type Props = {
   items: GarmentSummary[];
   pickupLocationId: string;
+  eventDate?: string | null;
   pickupDate: string;
   returnDate: string;
 };
 
-export function SimilarGarments({ items, pickupLocationId, pickupDate, returnDate }: Props) {
+export function SimilarGarments({ items, pickupLocationId, eventDate, pickupDate, returnDate }: Props) {
+  const dateQuery = buildCatalogDateQuery({
+    eventDate,
+    pickupDate,
+    returnDate,
+    pickupLocationId,
+    availableOnly: true,
+  });
   if (items.length === 0) return null;
 
   return (
@@ -27,7 +36,7 @@ export function SimilarGarments({ items, pickupLocationId, pickupDate, returnDat
           return (
           <Link
             key={g.id}
-            href={`/catalog/${g.id}?pickupLocationId=${encodeURIComponent(pickupLocationId)}&pickupDate=${encodeURIComponent(pickupDate)}&returnDate=${encodeURIComponent(returnDate)}`}
+            href={`/catalog/${g.id}?${dateQuery}`}
             className="group overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] transition hover:border-fuchsia-500/30"
           >
             <div className="relative aspect-[3/4] bg-muted">

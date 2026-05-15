@@ -6,6 +6,7 @@ import { createReservation } from '@/lib/actions/availability';
 import { findOrCreateCheckoutCustomer } from '@/lib/checkout-customer';
 import { getStorefrontOrgId } from '@/lib/storefront-org';
 import { redirectToPaymentAfterReservations } from '@/lib/payments/start-payment';
+import { mapCreateReservationError } from '@/lib/availability/check-garment-range';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 
@@ -77,7 +78,10 @@ export async function processCheckout(formData: FormData) {
   });
 
   if (reserveResult.error || !reserveResult.data) {
-    redirect(`/catalog/${garmentId}?error=Esta+prenda+ya+fue+reservada`);
+    const msg = encodeURIComponent(
+      mapCreateReservationError(reserveResult.error, reserveResult.code),
+    );
+    redirect(`/catalog/${garmentId}?error=${msg}`);
   }
 
   const reservationId = reserveResult.data.reservation_id;
@@ -185,7 +189,8 @@ export async function processCartCheckout(formData: FormData) {
     });
 
     if (reserveResult.error || !reserveResult.data) {
-      return { error: `La prenda ${garment.name} no está disponible para las fechas seleccionadas.` };
+      const detail = mapCreateReservationError(reserveResult.error, reserveResult.code);
+      return { error: `${garment.name}: ${detail}` };
     }
 
     reservationIds.push(reserveResult.data.reservation_id);

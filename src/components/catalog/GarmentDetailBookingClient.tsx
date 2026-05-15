@@ -12,6 +12,7 @@ export interface GarmentDetailBookingClientProps {
   pickupLocationId: string;
   initialPickupDate: string;
   initialReturnDate: string;
+  urlRangeBlocked?: boolean;
 }
 
 export function GarmentDetailBookingClient({
@@ -19,6 +20,7 @@ export function GarmentDetailBookingClient({
   pickupLocationId,
   initialPickupDate,
   initialReturnDate,
+  urlRangeBlocked = false,
 }: GarmentDetailBookingClientProps) {
   const [calendarOverride, setCalendarOverride] = useState<BookingRange | null>(null);
 
@@ -36,6 +38,9 @@ export function GarmentDetailBookingClient({
         <ClientDateSelector
           garment={garment}
           pickupLocationId={pickupLocationId}
+          initialPickupDate={initialPickupDate}
+          initialReturnDate={initialReturnDate}
+          urlRangeBlocked={urlRangeBlocked}
           onBookingDatesChange={setCalendarOverride}
         />
       </div>

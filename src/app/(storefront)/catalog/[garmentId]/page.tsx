@@ -14,6 +14,8 @@ import { WaitlistJoin } from '@/components/catalog/WaitlistJoin';
 import { FavoriteHeart } from '@/components/catalog/FavoriteHeart';
 import { dateRangesOverlap } from '@/lib/date-range';
 import { primaryPhotoUrl, uniquePhotoUrls } from '@/lib/photo-urls';
+import { buildCatalogDateQuery, resolveCatalogDatesFromSearchParams } from '@/lib/catalog/event-date-range';
+import { toLocalYmdString } from '@/lib/calendar-date';
 
 type GarmentRow = Database['public']['Tables']['garments']['Row'];
 type GarmentDetailRow = GarmentRow & {
@@ -88,15 +90,25 @@ export default async function GarmentDetailPage({
   const garment = data as GarmentDetailRow;
   const loc = garment.locations;
 
-  const pickupDate =
-    typeof searchParams.pickupDate === 'string' ? searchParams.pickupDate : new Date().toISOString().split('T')[0];
-  const returnDate =
-    typeof searchParams.returnDate === 'string'
-      ? searchParams.returnDate
-      : new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0];
+  const today = toLocalYmdString(new Date());
+  const datesResolved = resolveCatalogDatesFromSearchParams(searchParams, today);
+  if (!datesResolved.ok) {
+    redirect('/catalog');
+  }
+  const { eventDate, pickupDate, returnDate } = datesResolved;
+
   const rawPickupLoc =
     typeof searchParams.pickupLocationId === 'string' ? searchParams.pickupLocationId.trim() : '';
   const garmentLocId = garment.location_id;
+
+  const garmentDateQuery = (locId: string) =>
+    buildCatalogDateQuery({
+      eventDate,
+      pickupDate,
+      returnDate,
+      pickupLocationId: locId,
+      availableOnly: true,
+    });
 
   let pickupLocationId: string;
   let sedeLine: { name: string; address_line: string } | null =
@@ -104,9 +116,7 @@ export default async function GarmentDetailPage({
 
   if (garmentLocId) {
     if (!z.string().uuid().safeParse(rawPickupLoc).success || rawPickupLoc !== garmentLocId) {
-      redirect(
-        `/catalog/${params.garmentId}?pickupLocationId=${garmentLocId}&pickupDate=${pickupDate}&returnDate=${returnDate}`,
-      );
+      redirect(`/catalog/${params.garmentId}?${garmentDateQuery(garmentLocId)}`);
     }
     pickupLocationId = rawPickupLoc;
   } else {
@@ -129,9 +139,7 @@ export default async function GarmentDetailPage({
     const defaultPid = locs[0].id;
     const rawOk = z.string().uuid().safeParse(rawPickupLoc).success && locs.some((l) => l.id === rawPickupLoc);
     if (!rawOk) {
-      redirect(
-        `/catalog/${params.garmentId}?pickupLocationId=${defaultPid}&pickupDate=${pickupDate}&returnDate=${returnDate}`,
-      );
+      redirect(`/catalog/${params.garmentId}?${garmentDateQuery(defaultPid)}`);
     }
     pickupLocationId = rawPickupLoc;
     const chosen = locs.find((l) => l.id === pickupLocationId);
@@ -183,7 +191,8 @@ export default async function GarmentDetailPage({
     favorited = Boolean(fav);
   }
 
-  const detailRedirectPath = `/catalog/${params.garmentId}?pickupLocationId=${encodeURIComponent(pickupLocationId)}&pickupDate=${encodeURIComponent(pickupDate)}&returnDate=${encodeURIComponent(returnDate)}`;
+  const detailRedirectPath = `/catalog/${params.garmentId}?${garmentDateQuery(pickupLocationId)}`;
+  const catalogBackHref = `/catalog?${garmentDateQuery(pickupLocationId)}`;
 
   let similarGarments: GarmentSummary[] = [];
   if (garment.category && garment.size_label) {
@@ -226,7 +235,7 @@ export default async function GarmentDetailPage({
 
       <div className="relative z-10 container mx-auto max-w-7xl px-4 sm:px-6 py-16 sm:py-20 lg:py-24">
         <Link
-          href={`/catalog?pickupLocationId=${encodeURIComponent(pickupLocationId)}&pickupDate=${encodeURIComponent(pickupDate)}&returnDate=${encodeURIComponent(returnDate)}`}
+          href={catalogBackHref}
           className="mb-6 inline-flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-fuchsia-300"
         >
           ← Volver al catálogo
@@ -312,6 +321,7 @@ export default async function GarmentDetailPage({
               pickupLocationId={pickupLocationId}
               initialPickupDate={pickupDate}
               initialReturnDate={returnDate}
+              urlRangeBlocked={urlRangeBlocked}
             />
 
             <WaitlistJoin
@@ -329,6 +339,7 @@ export default async function GarmentDetailPage({
         <SimilarGarments
           items={similarGarments}
           pickupLocationId={pickupLocationId}
+          eventDate={eventDate}
           pickupDate={pickupDate}
           returnDate={returnDate}
         />

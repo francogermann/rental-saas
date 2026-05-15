@@ -4,8 +4,10 @@ import { useCart } from '@/components/cart/CartContext';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { processCartCheckout } from '@/lib/actions/checkout';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { formatUy } from '@/lib/utils';
+import { validateCartAvailabilityAction } from '@/lib/actions/cart-availability';
+import Link from 'next/link';
 
 type Props = {
   submitLabel: string;
@@ -17,6 +19,35 @@ export function CheckoutCartClient({ submitLabel, paymentHint }: Props) {
   const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [availabilityError, setAvailabilityError] = useState<string | null>(null);
+  const [checkingAvailability, setCheckingAvailability] = useState(true);
+
+  useEffect(() => {
+    if (items.length === 0) {
+      setCheckingAvailability(false);
+      setAvailabilityError(null);
+      return;
+    }
+
+    let cancelled = false;
+    setCheckingAvailability(true);
+    void validateCartAvailabilityAction(
+      items.map((item) => ({
+        garmentId: item.garment.id,
+        garmentName: item.garment.name,
+        pickupDate: item.pickupDate,
+        returnDate: item.returnDate,
+      })),
+    ).then((result) => {
+      if (cancelled) return;
+      setAvailabilityError(result.ok ? null : result.message);
+      setCheckingAvailability(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [items]);
 
   if (items.length === 0) {
     return (
@@ -34,6 +65,8 @@ export function CheckoutCartClient({ submitLabel, paymentHint }: Props) {
 
   const handleCheckout = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (availabilityError) return;
+
     setIsProcessing(true);
     setError(null);
 
@@ -77,11 +110,26 @@ export function CheckoutCartClient({ submitLabel, paymentHint }: Props) {
               Tus Datos
             </h2>
 
-            {error && (
+            {checkingAvailability ? (
+              <div className="mb-6 p-4 rounded-xl border border-white/10 bg-white/5 text-sm text-muted-foreground">
+                Verificando disponibilidad de las prendas en tu carrito…
+              </div>
+            ) : null}
+
+            {availabilityError ? (
+              <div className="mb-6 space-y-3 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+                <p>{availabilityError}</p>
+                <Link href="/catalog" className="inline-block font-semibold text-fuchsia-300 hover:text-fuchsia-200">
+                  Volver al catálogo
+                </Link>
+              </div>
+            ) : null}
+
+            {error ? (
               <div className="mb-6 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium">
                 {error}
               </div>
-            )}
+            ) : null}
 
             <form onSubmit={handleCheckout} className="space-y-6">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -142,7 +190,7 @@ export function CheckoutCartClient({ submitLabel, paymentHint }: Props) {
 
               <button
                 type="submit"
-                disabled={isProcessing}
+                disabled={isProcessing || checkingAvailability || Boolean(availabilityError)}
                 className="w-full bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 disabled:opacity-50 text-white rounded-xl py-4 font-bold tracking-wide shadow-glow transition-all"
               >
                 {buttonLabel}
