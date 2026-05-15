@@ -138,6 +138,11 @@ export default function CheckoutClientPage() {
                     </div>
                     
                     <div className="mt-2 text-xs text-muted-foreground/80 space-y-0.5">
+                      {item.garment.location_name ? (
+                        <p>
+                          Sede: <span className="text-foreground">{item.garment.location_name}</span>
+                        </p>
+                      ) : null}
                       <p>Retiro: <span className="text-foreground">{item.pickupDate}</span></p>
                       <p>Devolución: <span className="text-foreground">{item.returnDate}</span></p>
                     </div>

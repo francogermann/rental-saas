@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
@@ -10,6 +10,8 @@ import { useCart } from '@/components/cart/CartContext';
 import { formatUy } from '@/lib/utils';
 
 import type { GarmentSummary } from '@/types/domain';
+
+export type CatalogLocationOption = { id: string; name: string; address_line: string };
 
 // Filter options
 const EVENT_TYPES = [
@@ -59,15 +61,31 @@ interface CatalogClientProps {
   error: string | null;
   initialPickupDate: string;
   initialReturnDate: string;
+  locations: CatalogLocationOption[];
+  pickupLocationId: string;
 }
 
-export default function CatalogClient({ garments, error, initialPickupDate, initialReturnDate }: CatalogClientProps) {
+export default function CatalogClient({
+  garments,
+  error,
+  initialPickupDate,
+  initialReturnDate,
+  locations,
+  pickupLocationId,
+}: CatalogClientProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   const [pickupDate, setPickupDate] = useState(initialPickupDate);
   const [returnDate, setReturnDate] = useState(initialReturnDate);
+  const [pickupLoc, setPickupLoc] = useState(pickupLocationId);
+
+  useEffect(() => {
+    setPickupDate(initialPickupDate);
+    setReturnDate(initialReturnDate);
+    setPickupLoc(pickupLocationId);
+  }, [initialPickupDate, initialReturnDate, pickupLocationId]);
 
   const { addItem } = useCart();
 
@@ -91,6 +109,7 @@ export default function CatalogClient({ garments, error, initialPickupDate, init
 
   const applyDates = () => {
     const params = new URLSearchParams(searchParams.toString());
+    params.set('pickupLocationId', pickupLoc);
     params.set('pickupDate', pickupDate);
     params.set('returnDate', returnDate);
     router.push(`${pathname}?${params.toString()}`);
@@ -211,8 +230,23 @@ export default function CatalogClient({ garments, error, initialPickupDate, init
 
   const filtersContent = (
     <>
-      <FilterSection title="Fechas" count={0}>
+      <FilterSection title="Fechas y sede" count={0}>
         <div className="flex flex-col gap-3">
+          <div>
+            <label className="text-[10px] uppercase text-muted-foreground font-semibold mb-1 block">Sede de retiro</label>
+            <select
+              value={pickupLoc}
+              onChange={(e) => setPickupLoc(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-fuchsia-500/50"
+            >
+              {locations.map((loc) => (
+                <option key={loc.id} value={loc.id}>
+                  {loc.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-[10px] text-muted-foreground mt-1 line-clamp-2">{locations.find((l) => l.id === pickupLoc)?.address_line}</p>
+          </div>
           <div>
             <label className="text-[10px] uppercase text-muted-foreground font-semibold mb-1 block">Retiro</label>
             <input 
@@ -236,7 +270,7 @@ export default function CatalogClient({ garments, error, initialPickupDate, init
             disabled={pickupDate >= returnDate}
             className="mt-1 w-full bg-fuchsia-600 hover:bg-fuchsia-500 disabled:opacity-50 disabled:hover:bg-fuchsia-600 text-white rounded-lg py-2 text-xs font-bold uppercase tracking-wider transition-colors"
           >
-            Aplicar Fechas
+            Aplicar sede y fechas
           </button>
         </div>
       </FilterSection>
@@ -424,12 +458,15 @@ export default function CatalogClient({ garments, error, initialPickupDate, init
                   </div>
                   <div className="flex gap-2">
                     <button 
-                      onClick={() => addItem({ garment: g, pickupDate, returnDate })}
+                      onClick={() => addItem({ garment: g, pickupDate, returnDate, pickupLocationId: pickupLoc })}
                       className="rounded-2xl bg-white/5 border border-white/10 text-white hover:bg-white/10 active:scale-95 px-4 py-2 transition-all duration-300 text-sm font-semibold"
                     >
                       Añadir
                     </button>
-                    <Link href={`/catalog/${g.id}`} className="rounded-2xl bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white hover:scale-[1.02] active:scale-95 px-4 py-2 transition-all duration-300 text-sm font-semibold shadow-glow hover:shadow-glow-lg">
+                    <Link
+                      href={`/catalog/${g.id}?pickupLocationId=${encodeURIComponent(pickupLoc)}&pickupDate=${encodeURIComponent(pickupDate)}&returnDate=${encodeURIComponent(returnDate)}`}
+                      className="rounded-2xl bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white hover:scale-[1.02] active:scale-95 px-4 py-2 transition-all duration-300 text-sm font-semibold shadow-glow hover:shadow-glow-lg"
+                    >
                       Detalles
                     </Link>
                   </div>

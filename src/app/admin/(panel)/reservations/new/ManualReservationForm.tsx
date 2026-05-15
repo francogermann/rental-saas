@@ -11,6 +11,8 @@ export type ManualReservationGarmentOption = {
   rental_price: number;
   deposit_amount: number;
   photos_urls: string[];
+  location_id: string | null;
+  location_name: string | null;
 };
 
 export type ManualReservationCustomerOption = {
@@ -20,17 +22,25 @@ export type ManualReservationCustomerOption = {
   email: string;
 };
 
+export type ManualReservationLocationOption = {
+  id: string;
+  name: string;
+  address_line: string;
+};
+
 const initialState: ManualReservationFormState = {};
 
 export function ManualReservationForm({
   garments,
   customers,
+  locations,
   defaultPickup,
   defaultReturn,
   defaultEvent,
 }: {
   garments: ManualReservationGarmentOption[];
   customers: ManualReservationCustomerOption[];
+  locations: ManualReservationLocationOption[];
   defaultPickup: string;
   defaultReturn: string;
   defaultEvent: string;
@@ -202,6 +212,11 @@ export function ManualReservationForm({
                       <div className="min-w-0 flex-1">
                         <div className="font-medium text-foreground line-clamp-2">{g.name}</div>
                         <div className="mt-0.5 text-xs text-muted-foreground">SKU {g.sku}</div>
+                        {g.location_name ? (
+                          <div className="mt-0.5 text-[10px] uppercase tracking-wide text-fuchsia-200/80">
+                            Depósito: {g.location_name}
+                          </div>
+                        ) : null}
                         <div className="mt-1 text-xs text-zinc-400">
                           Alquiler {g.rental_price} · Seña {g.deposit_amount}
                         </div>
@@ -223,8 +238,50 @@ export function ManualReservationForm({
         ) : selected ? (
           <p className="text-xs text-muted-foreground">
             Precios sugeridos abajo: alquiler {selected.rental_price}, seña {selected.deposit_amount} (editables).
+            {selected.location_name ? (
+              <>
+                {' '}
+                · Depósito físico: <span className="text-fuchsia-200/90">{selected.location_name}</span>
+              </>
+            ) : null}
           </p>
         ) : null}
+      </section>
+
+      <section className="space-y-3 rounded-2xl border border-white/5 bg-white/[0.02] p-4">
+        <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Retiro y logística</h2>
+        <div className="space-y-2">
+          <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            Sede de retiro pactada (opcional)
+          </label>
+          <select
+            name="pickup_location_id"
+            className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-foreground"
+            defaultValue=""
+          >
+            <option value="">Igual que la sede del vestido (depósito físico)</option>
+            {locations.map((loc) => (
+              <option key={loc.id} value={loc.id}>
+                {loc.name}
+              </option>
+            ))}
+          </select>
+          <p className="text-[11px] text-muted-foreground">
+            Si la clienta retira en otra sede, elegila acá; queda registrada en la reserva aunque el vestido esté en
+            depósito en otra ubicación.
+          </p>
+        </div>
+        <div className="space-y-2">
+          <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            Notas / logística
+          </label>
+          <textarea
+            name="reservation_notes"
+            rows={3}
+            placeholder="Ej. coordinar traslado a Montevideo, retira la hermana…"
+            className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm placeholder:text-muted-foreground/50"
+          />
+        </div>
       </section>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

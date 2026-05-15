@@ -63,6 +63,11 @@ export function CartDrawer() {
                   </div>
                   
                   <div className="mt-3 text-xs text-muted-foreground">
+                    {item.garment.location_name ? (
+                      <p className="mb-1 text-fuchsia-200/80">
+                        Sede: <span className="text-foreground">{item.garment.location_name}</span>
+                      </p>
+                    ) : null}
                     <p>Retiro: <span className="text-foreground">{item.pickupDate}</span></p>
                     <p>Devolución: <span className="text-foreground">{item.returnDate}</span></p>
                   </div>

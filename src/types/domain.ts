@@ -178,6 +178,8 @@ export interface Reservation {
 export interface AvailabilitySearchParams {
     pickupDate: string;  // 'YYYY-MM-DD'
     returnDate: string;  // 'YYYY-MM-DD'
+    /** Sede física donde la clienta retira; filtra prendas con el mismo location_id. */
+    pickupLocationId: string;
     sizeLabel?: string;
     chestCm?: number;
     waistCm?: number;
@@ -195,6 +197,8 @@ export interface CreateReservationParams {
     eventDate?: string;
     rentalPrice: number;
     depositAmount: number;
+    /** Debe coincidir con garments.location_id para checkout público. */
+    pickupLocationId: string;
 }
 
 export interface CreateReservationResult {

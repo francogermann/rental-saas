@@ -93,35 +93,51 @@ export function GarmentDateRangePicker({
     }
 
     return (
-        <div className="flex flex-col gap-3 w-full overflow-x-auto">
-            {/* 
-              - sm/mobile: 1 month column
-              - md+: 2 months side by side
-              We control this via CSS: show the second month container only on md+
+        <div className="garment-date-rdp flex flex-col gap-3 w-full overflow-x-auto">
+            {/*
+              react-day-picker v9: el CSS por defecto usa --rdp-accent-background-color (#f0f0ff) y
+              range_middle con color inherit → en tema oscuro los números quedan claros sobre fondo claro.
+              Sobrescribimos variables en .rdp-root (v9 ya no usa .rdp-day_selected / .rdp-day_range_middle).
             */}
             <style>{`
-                @media (max-width: 767px) {
-                    .rdp-months { flex-direction: column; align-items: center; }
-                    .rdp-months .rdp-month:nth-child(2) { display: none; }
-                    .rdp-day_button { width: 38px; height: 38px; }
-                }
-                .rdp-root {
+                .garment-date-rdp .rdp-root {
+                    --rdp-accent-color: hsl(315 100% 58%);
+                    /* Fondo del rango (medio): oscuro semitransparente, no blanco */
+                    --rdp-accent-background-color: hsl(280 40% 22% / 0.72);
+                    --rdp-range_middle-background-color: hsl(280 38% 20% / 0.78);
+                    --rdp-range_middle-color: hsl(0 0% 96%);
+                    --rdp-range_start-color: hsl(0 0% 100%);
+                    --rdp-range_end-color: hsl(0 0% 100%);
+                    --rdp-today-color: hsl(315 100% 72%);
+                    color: hsl(var(--foreground));
                     width: 100%;
                     display: flex;
                     justify-content: center;
                 }
-                .rdp-day_selected:not(.rdp-day_range_middle) .rdp-day_button {
-                    background-color: hsl(var(--primary));
-                    color: hsl(var(--primary-foreground));
-                    border-radius: 0.5rem;
+                .garment-date-rdp .rdp-weekday {
+                    color: hsl(var(--muted-foreground));
+                    opacity: 1;
                 }
-                .rdp-day_range_middle .rdp-day_button {
-                    background: hsl(var(--primary) / 0.12);
-                    color: hsl(var(--primary));
-                    border-radius: 0;
+                .garment-date-rdp .rdp-caption_label {
+                    color: hsl(var(--foreground));
                 }
-                .rdp-day_button:hover:not(:disabled) {
-                    background: hsl(var(--accent));
+                .garment-date-rdp .rdp-nav_button {
+                    color: hsl(var(--foreground));
+                }
+                .garment-date-rdp .rdp-day_button {
+                    color: hsl(var(--foreground));
+                }
+                .garment-date-rdp .rdp-day_button:hover:not(:disabled) {
+                    background-color: hsl(var(--muted));
+                    color: hsl(var(--foreground));
+                }
+                .garment-date-rdp .rdp-disabled .rdp-day_button {
+                    color: hsl(var(--muted-foreground));
+                }
+                @media (max-width: 767px) {
+                    .garment-date-rdp .rdp-months { flex-direction: column; align-items: center; }
+                    .garment-date-rdp .rdp-months .rdp-month:nth-child(2) { display: none; }
+                    .garment-date-rdp .rdp-day_button { width: 38px; height: 38px; }
                 }
             `}</style>
 

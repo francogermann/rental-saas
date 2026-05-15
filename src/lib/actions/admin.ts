@@ -436,6 +436,27 @@ export async function createManualReservation(
         customer_id = custOk.id;
     }
 
+    const pickupLocRaw = String(formData.get('pickup_location_id') ?? '').trim();
+    let pickup_location_id: string | null = null;
+    if (pickupLocRaw.length > 0) {
+        if (!z.string().uuid().safeParse(pickupLocRaw).success) {
+            return { error: 'Sede de retiro inválida.' };
+        }
+        const { data: locOk, error: locErr } = await supabase
+            .from('locations')
+            .select('id')
+            .eq('id', pickupLocRaw)
+            .eq('organization_id', org.id)
+            .maybeSingle();
+        if (locErr || !locOk) {
+            return { error: 'La sede de retiro no es válida para esta organización.' };
+        }
+        pickup_location_id = pickupLocRaw;
+    }
+
+    const reservationNotes = String(formData.get('reservation_notes') ?? '').trim();
+    const p_notes = reservationNotes.length > 0 ? reservationNotes : null;
+
     const { error: rpcError } = await supabase.rpc('create_reservation_with_block_for_org', {
         p_organization_id: org.id,
         p_garment_id: garment_id,
@@ -445,6 +466,9 @@ export async function createManualReservation(
         p_event_date: event_date,
         p_rental_price: rental_price,
         p_deposit_amount: deposit_amount,
+        p_pickup_location_id: pickup_location_id ?? undefined,
+        p_notes: p_notes ?? undefined,
+        p_status: 'confirmed',
     });
 
     if (rpcError) {
