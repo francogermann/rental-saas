@@ -115,6 +115,24 @@ export function parseShowAllCatalog(searchParams: SearchParamsLike): boolean {
   return false;
 }
 
+/** Explorar catálogo sin fecha ni filtro de disponibilidad (`?showAll=1` sin fechas). */
+export function isCatalogBrowseWithoutDates(searchParams: SearchParamsLike): boolean {
+  return !hasCatalogEventContext(searchParams) && parseShowAllCatalog(searchParams);
+}
+
+/** Mostrar modal de fecha al entrar sin fechas y sin haber elegido "solo ver". */
+export function shouldShowEventDateModal(searchParams: SearchParamsLike): boolean {
+  return !hasCatalogEventContext(searchParams) && !parseShowAllCatalog(searchParams);
+}
+
+/** Query para enlaces en modo browse (detalle, similares). */
+export function buildCatalogBrowseQuery(pickupLocationId?: string): string {
+  const p = new URLSearchParams();
+  p.set('showAll', '1');
+  if (pickupLocationId) p.set('pickupLocationId', pickupLocationId);
+  return p.toString();
+}
+
 export function buildCatalogDateQuery(params: {
   eventDate?: string | null;
   pickupDate: string;

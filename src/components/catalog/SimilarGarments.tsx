@@ -3,25 +3,35 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { primaryPhotoUrl } from '@/lib/photo-urls';
 import { formatUy } from '@/lib/utils';
-import { buildCatalogDateQuery } from '@/lib/catalog/event-date-range';
+import { buildCatalogBrowseQuery, buildCatalogDateQuery } from '@/lib/catalog/event-date-range';
 import type { GarmentSummary } from '@/types/domain';
 
 type Props = {
   items: GarmentSummary[];
   pickupLocationId: string;
+  browseWithoutDates?: boolean;
   eventDate?: string | null;
   pickupDate: string;
   returnDate: string;
 };
 
-export function SimilarGarments({ items, pickupLocationId, eventDate, pickupDate, returnDate }: Props) {
-  const dateQuery = buildCatalogDateQuery({
-    eventDate,
-    pickupDate,
-    returnDate,
-    pickupLocationId,
-    availableOnly: true,
-  });
+export function SimilarGarments({
+  items,
+  pickupLocationId,
+  browseWithoutDates = false,
+  eventDate,
+  pickupDate,
+  returnDate,
+}: Props) {
+  const dateQuery = browseWithoutDates
+    ? buildCatalogBrowseQuery(pickupLocationId)
+    : buildCatalogDateQuery({
+        eventDate,
+        pickupDate,
+        returnDate,
+        pickupLocationId,
+        availableOnly: true,
+      });
   if (items.length === 0) return null;
 
   return (

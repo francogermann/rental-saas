@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toLocalYmdString } from '@/lib/calendar-date';
 import {
@@ -10,13 +10,16 @@ import {
 import type { CatalogLocationOption } from '@/app/(storefront)/catalog/CatalogClient';
 
 type Props = {
+  open: boolean;
   locations: CatalogLocationOption[];
   defaultLocationId?: string;
+  initialError?: string | null;
 };
 
-export function CatalogEventDateGate({ locations, defaultLocationId }: Props) {
+export function CatalogEventDateModal({ open, locations, defaultLocationId, initialError }: Props) {
   const router = useRouter();
   const today = useMemo(() => toLocalYmdString(new Date()), []);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   const initialLoc =
     defaultLocationId && locations.some((l) => l.id === defaultLocationId)
@@ -27,7 +30,17 @@ export function CatalogEventDateGate({ locations, defaultLocationId }: Props) {
 
   const [eventDate, setEventDate] = useState('');
   const [pickupLoc, setPickupLoc] = useState(initialLoc);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialError ?? null);
+
+  useEffect(() => {
+    setError(initialError ?? null);
+  }, [initialError]);
+
+  useEffect(() => {
+    if (open) {
+      dialogRef.current?.focus();
+    }
+  }, [open]);
 
   const preview = useMemo(() => {
     if (!eventDate) return null;
@@ -65,17 +78,40 @@ export function CatalogEventDateGate({ locations, defaultLocationId }: Props) {
     router.push(`/catalog?${params.toString()}`);
   };
 
+  const handleBrowseOnly = () => {
+    router.replace('/catalog?showAll=1');
+  };
+
+  if (!open) return null;
+
   return (
-    <div className="flex flex-col items-center px-4 py-12 sm:py-16">
-      <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/[0.04] p-8 shadow-2xl backdrop-blur-xl">
-        <h2 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">¿Cuándo es tu evento?</h2>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      role="presentation"
+    >
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-md" aria-hidden />
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="event-date-modal-title"
+        tabIndex={-1}
+        className="relative z-10 w-full max-w-md rounded-3xl border border-white/10 bg-background/95 p-8 shadow-2xl backdrop-blur-xl outline-none"
+      >
+        <h2 id="event-date-modal-title" className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
+          ¿Cuándo es tu evento?
+        </h2>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-          Te mostramos solo vestidos disponibles para esas fechas. No hace falta revisar prendas que ya están reservadas.
+          Te mostramos solo vestidos disponibles para esas fechas. También podés explorar toda la colección sin
+          elegir fecha.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">
           <div>
-            <label htmlFor="eventDate" className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <label
+              htmlFor="eventDate"
+              className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+            >
               Fecha del evento
             </label>
             <input
@@ -88,13 +124,15 @@ export function CatalogEventDateGate({ locations, defaultLocationId }: Props) {
                 setError(null);
               }}
               className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-foreground focus:border-fuchsia-500/50 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/20"
-              required
             />
           </div>
 
           {locations.length > 1 ? (
             <div>
-              <label htmlFor="pickupLoc" className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <label
+                htmlFor="pickupLoc"
+                className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+              >
                 Sede de retiro
               </label>
               <select
@@ -135,6 +173,14 @@ export function CatalogEventDateGate({ locations, defaultLocationId }: Props) {
             className="w-full rounded-2xl bg-gradient-to-r from-fuchsia-500 to-purple-600 py-3.5 font-semibold text-white shadow-glow transition hover:from-fuchsia-400 hover:to-purple-500"
           >
             Ver vestidos disponibles
+          </button>
+
+          <button
+            type="button"
+            onClick={handleBrowseOnly}
+            className="w-full rounded-2xl border border-white/15 bg-white/5 py-3 text-sm font-medium text-muted-foreground transition hover:bg-white/10 hover:text-foreground"
+          >
+            Todavía no tengo fecha definida — solo quiero ver la colección
           </button>
         </form>
       </div>

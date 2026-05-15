@@ -9,11 +9,13 @@ import {
   CATALOG_SIZE_OPTIONS,
 } from '@/lib/catalog-taxonomy';
 import { CATALOG_FETCH_SIZE, CATALOG_PAGE_SIZE } from '@/lib/catalog-pagination';
-import { CatalogEventDateGate } from '@/components/catalog/CatalogEventDateGate';
+import { CatalogEventDateModal } from '@/components/catalog/CatalogEventDateModal';
 import {
   hasCatalogEventContext,
+  isCatalogBrowseWithoutDates,
   parseShowAllCatalog,
   resolveCatalogDatesFromSearchParams,
+  shouldShowEventDateModal,
 } from '@/lib/catalog/event-date-range';
 
 function pickStr(sp: Record<string, string | string[] | undefined>, key: string): string | undefined {
@@ -67,30 +69,29 @@ export default async function CatalogPage({
     </section>
   );
 
-  if (!hasCatalogEventContext(searchParams)) {
-    return (
-      <div className="min-h-screen">
-        {catalogHeader}
-        <CatalogEventDateGate locations={locations} defaultLocationId={pickupLocationId} />
-      </div>
-    );
-  }
-
   const today = toLocalYmdString(new Date());
-  const datesResolved = resolveCatalogDatesFromSearchParams(searchParams, today);
-  if (!datesResolved.ok) {
-    return (
-      <div className="min-h-screen">
-        {catalogHeader}
-        <p className="px-6 pb-12 text-center text-destructive">{datesResolved.error}</p>
-        <CatalogEventDateGate locations={locations} defaultLocationId={pickupLocationId} />
-      </div>
-    );
+  const hasDates = hasCatalogEventContext(searchParams);
+  const showAll = parseShowAllCatalog(searchParams);
+  const browseWithoutDates = isCatalogBrowseWithoutDates(searchParams);
+  const openEventDateModal = shouldShowEventDateModal(searchParams);
+
+  let eventDate: string | null = null;
+  let pickupDate = '';
+  let returnDate = '';
+  let datesError: string | null = null;
+
+  if (hasDates) {
+    const datesResolved = resolveCatalogDatesFromSearchParams(searchParams, today);
+    if (datesResolved.ok) {
+      eventDate = datesResolved.eventDate;
+      pickupDate = datesResolved.pickupDate;
+      returnDate = datesResolved.returnDate;
+    } else {
+      datesError = datesResolved.error;
+    }
   }
 
-  const { eventDate, pickupDate, returnDate } = datesResolved;
-  const showAll = parseShowAllCatalog(searchParams);
-  const availableOnly = !showAll;
+  const availableOnly = hasDates && !showAll && !datesError;
 
   const { data: catRows } = await admin
     .from('garments')
@@ -161,7 +162,7 @@ export default async function CatalogPage({
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="relative min-h-screen">
       {catalogHeader}
 
       <CatalogClient
@@ -181,7 +182,15 @@ export default async function CatalogPage({
         favoriteIds={favoriteIds}
         isLoggedIn={Boolean(user)}
         initialAvailableOnly={availableOnly}
-        showAllCatalog={showAll}
+        showAllCatalog={showAll || browseWithoutDates}
+        catalogBrowseWithoutDates={browseWithoutDates}
+      />
+
+      <CatalogEventDateModal
+        open={openEventDateModal || Boolean(datesError)}
+        locations={locations}
+        defaultLocationId={pickupLocationId}
+        initialError={datesError}
       />
     </div>
   );

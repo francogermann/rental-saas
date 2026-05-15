@@ -14,8 +14,14 @@ import { WaitlistJoin } from '@/components/catalog/WaitlistJoin';
 import { FavoriteHeart } from '@/components/catalog/FavoriteHeart';
 import { dateRangesOverlap } from '@/lib/date-range';
 import { primaryPhotoUrl, uniquePhotoUrls } from '@/lib/photo-urls';
-import { buildCatalogDateQuery, resolveCatalogDatesFromSearchParams } from '@/lib/catalog/event-date-range';
+import {
+  buildCatalogBrowseQuery,
+  buildCatalogDateQuery,
+  isCatalogBrowseWithoutDates,
+  resolveCatalogDatesFromSearchParams,
+} from '@/lib/catalog/event-date-range';
 import { toLocalYmdString } from '@/lib/calendar-date';
+import { addDays } from 'date-fns';
 
 type GarmentRow = Database['public']['Tables']['garments']['Row'];
 type GarmentDetailRow = GarmentRow & {
@@ -91,24 +97,36 @@ export default async function GarmentDetailPage({
   const loc = garment.locations;
 
   const today = toLocalYmdString(new Date());
-  const datesResolved = resolveCatalogDatesFromSearchParams(searchParams, today);
-  if (!datesResolved.ok) {
-    redirect('/catalog');
+  const browseWithoutDates = isCatalogBrowseWithoutDates(searchParams);
+
+  let eventDate: string | null = null;
+  let pickupDate = today;
+  let returnDate = toLocalYmdString(addDays(new Date(), 3));
+
+  if (!browseWithoutDates) {
+    const datesResolved = resolveCatalogDatesFromSearchParams(searchParams, today);
+    if (!datesResolved.ok) {
+      redirect('/catalog');
+    }
+    eventDate = datesResolved.eventDate;
+    pickupDate = datesResolved.pickupDate;
+    returnDate = datesResolved.returnDate;
   }
-  const { eventDate, pickupDate, returnDate } = datesResolved;
 
   const rawPickupLoc =
     typeof searchParams.pickupLocationId === 'string' ? searchParams.pickupLocationId.trim() : '';
   const garmentLocId = garment.location_id;
 
   const garmentDateQuery = (locId: string) =>
-    buildCatalogDateQuery({
-      eventDate,
-      pickupDate,
-      returnDate,
-      pickupLocationId: locId,
-      availableOnly: true,
-    });
+    browseWithoutDates
+      ? buildCatalogBrowseQuery(locId)
+      : buildCatalogDateQuery({
+          eventDate,
+          pickupDate,
+          returnDate,
+          pickupLocationId: locId,
+          availableOnly: true,
+        });
 
   let pickupLocationId: string;
   let sedeLine: { name: string; address_line: string } | null =
@@ -339,6 +357,7 @@ export default async function GarmentDetailPage({
         <SimilarGarments
           items={similarGarments}
           pickupLocationId={pickupLocationId}
+          browseWithoutDates={browseWithoutDates}
           eventDate={eventDate}
           pickupDate={pickupDate}
           returnDate={returnDate}
