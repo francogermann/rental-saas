@@ -241,21 +241,28 @@ export default async function AdminReservationsPage({
                       </td>
 
                       <td className="px-6 py-4">
-                        <Badge
-                          className={
-                            res.status === 'confirmed' || res.status === 'paid'
-                              ? 'bg-emerald-500/20 text-emerald-300'
-                              : res.status === 'pending'
-                                ? 'bg-amber-500/20 text-amber-300'
-                                : res.status === 'delivered'
-                                  ? 'bg-indigo-500/20 text-indigo-300'
-                                  : res.status === 'returned'
-                                    ? 'bg-zinc-500/20 text-zinc-300'
-                                    : 'bg-red-500/20 text-red-300'
-                          }
-                        >
-                          {labelReservationStatus(res.status)}
-                        </Badge>
+                        <div className="flex flex-col items-start gap-1">
+                          <Badge
+                            className={
+                              res.status === 'confirmed' || res.status === 'paid'
+                                ? 'bg-emerald-500/20 text-emerald-300'
+                                : res.status === 'pending'
+                                  ? 'bg-amber-500/20 text-amber-300'
+                                  : res.status === 'delivered'
+                                    ? 'bg-indigo-500/20 text-indigo-300'
+                                    : res.status === 'returned'
+                                      ? 'bg-zinc-500/20 text-zinc-300'
+                                      : 'bg-red-500/20 text-red-300'
+                            }
+                          >
+                            {labelReservationStatus(res.status)}
+                          </Badge>
+                          {res.status === 'pending' ? (
+                            <span className="text-[10px] text-muted-foreground max-w-[140px] leading-tight">
+                              Fechas aún libres en catálogo
+                            </span>
+                          ) : null}
+                        </div>
                       </td>
 
                       <td className="px-6 py-4 text-right">

@@ -5,12 +5,9 @@ import { createAdminClient, createServerClient } from '@/lib/supabase/server';
 import { createReservation } from '@/lib/actions/availability';
 import { findOrCreateCheckoutCustomer } from '@/lib/checkout-customer';
 import { getStorefrontOrgId } from '@/lib/storefront-org';
-import { MercadoPagoConfig, Preference } from 'mercadopago';
+import { redirectToPaymentAfterReservations } from '@/lib/payments/start-payment';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
-
-// Get MP Token from Server Environment variables
-const mpAccessToken = process.env.MP_ACCESS_TOKEN || '';
 
 export async function processCheckout(formData: FormData) {
   const garmentId = formData.get('garmentId') as string;
@@ -36,102 +33,73 @@ export async function processCheckout(formData: FormData) {
 
   const orgResult = await getStorefrontOrgId(supabase);
   if ('error' in orgResult) {
-      redirect(`/catalog/${garmentId}?error=Organizacion+no+encontrada`);
+    redirect(`/catalog/${garmentId}?error=Organizacion+no+encontrada`);
   }
   const orgId = orgResult.orgId;
 
-  // 2. Get Garment to compute price securely on the backend
   const { data: garment, error: garmentError } = await supabase
-      .from('garments')
-      .select('name, rental_price, deposit_amount, location_id')
-      .eq('id', garmentId)
-      .is('deleted_at', null)
-      .single();
+    .from('garments')
+    .select('name, rental_price, deposit_amount, location_id')
+    .eq('id', garmentId)
+    .is('deleted_at', null)
+    .single();
 
   if (garmentError || !garment) {
-      redirect(`/catalog/${garmentId}?error=Prenda+invalida`);
+    redirect(`/catalog/${garmentId}?error=Prenda+invalida`);
   }
 
   if (garment.location_id && garment.location_id !== pickupLocationId) {
-      redirect(`/catalog/${garmentId}?error=Sede+no+coincide+con+la+prenda`);
+    redirect(`/catalog/${garmentId}?error=Sede+no+coincide+con+la+prenda`);
   }
 
   const totalAmount = (garment.rental_price || 0) + (garment.deposit_amount || 0);
 
   const customerResult = await findOrCreateCheckoutCustomer(supabase, authSupabase, {
-      orgId,
-      firstName,
-      lastName,
-      email,
-      phone,
+    orgId,
+    firstName,
+    lastName,
+    email,
+    phone,
   });
   if ('error' in customerResult) {
-      redirect(`/catalog/${garmentId}?error=Error+creando+cliente`);
+    redirect(`/catalog/${garmentId}?error=Error+creando+cliente`);
   }
   const customerId = customerResult.customerId;
 
-  // 4. Create Reservation Block
   const reserveResult = await createReservation({
-      garmentId,
-      customerId,
-      pickupDate,
-      returnDate,
-      rentalPrice: garment.rental_price || 0,
-      depositAmount: garment.deposit_amount || 0,
-      pickupLocationId,
+    garmentId,
+    customerId,
+    pickupDate,
+    returnDate,
+    rentalPrice: garment.rental_price || 0,
+    depositAmount: garment.deposit_amount || 0,
+    pickupLocationId,
   });
 
   if (reserveResult.error || !reserveResult.data) {
-      redirect(`/catalog/${garmentId}?error=Esta+prenda+ya+fue+reservada`);
+    redirect(`/catalog/${garmentId}?error=Esta+prenda+ya+fue+reservada`);
   }
 
   const reservationId = reserveResult.data.reservation_id;
 
-  // 5. Connect MercadoPago
-  if (!mpAccessToken) {
-     redirect(`/catalog/${garmentId}?error=Credenciales+MercadoPago+faltantes`);
-  }
-
   try {
-      const client = new MercadoPagoConfig({ accessToken: mpAccessToken });
-      const preference = new Preference(client);
-
-      const prefResult = await preference.create({
-          body: {
-              items: [
-                  {
-                      id: garmentId,
-                      title: `Alquiler: ${garment.name}`,
-                      quantity: 1,
-                      unit_price: totalAmount,
-                      currency_id: 'UYU',
-                  }
-              ],
-              payer: {
-                  email: email,
-                  name: `${firstName} ${lastName}`,
-              },
-              external_reference: reservationId,
-              back_urls: {
-                  success: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/checkout/success?ref=${reservationId}`,
-                  failure: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/checkout/failure?ref=${reservationId}`,
-                  pending: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/checkout/pending?ref=${reservationId}`,
-              },
-              auto_return: 'approved',
-              statement_descriptor: 'MAISON RENTALS',
-          }
-      });
-
-      if (!prefResult.init_point) {
-          throw new Error('Sin init_point');
-      }
-
-      // Return MercadoPago URL redirect
-      redirect(prefResult.init_point);
-
-  } catch (mercadopagoError) {
-      console.error(mercadopagoError);
-      redirect(`/catalog/${garmentId}?error=Error+MercadoPago`);
+    await redirectToPaymentAfterReservations({
+      reservationIds: [reservationId],
+      payerEmail: email,
+      payerName: `${firstName} ${lastName}`,
+      items: [
+        {
+          id: garmentId,
+          title: `Alquiler: ${garment.name}`,
+          unit_price: totalAmount,
+        },
+      ],
+      statementDescriptor: 'MAISON RENTALS',
+      failureRedirectPath: `/catalog/${garmentId}`,
+    });
+  } catch (err) {
+    console.error('processCheckout payment redirect:', err);
+    redirect(`/catalog/${garmentId}?error=Error+al+iniciar+el+pago`);
   }
 }
 
@@ -162,29 +130,27 @@ export async function processCartCheckout(formData: FormData) {
 
   const orgResult = await getStorefrontOrgId(supabase);
   if ('error' in orgResult) {
-      return { error: 'Organización no encontrada' };
+    return { error: 'Organización no encontrada' };
   }
   const orgId = orgResult.orgId;
 
   const customerResult = await findOrCreateCheckoutCustomer(supabase, authSupabase, {
-      orgId,
-      firstName,
-      lastName,
-      email,
-      phone,
+    orgId,
+    firstName,
+    lastName,
+    email,
+    phone,
   });
   if ('error' in customerResult) {
-      return { error: customerResult.error };
+    return { error: customerResult.error };
   }
   const customerId = customerResult.customerId;
 
-  // 3. Create Reservations per garment
   const reservationIds: string[] = [];
-  const preferenceItems: any[] = [];
-  
+  const preferenceItems: { id: string; title: string; unit_price: number }[] = [];
+
   for (const item of cartItems) {
-    const pickupLoc =
-      typeof item.pickupLocationId === 'string' ? item.pickupLocationId.trim() : '';
+    const pickupLoc = typeof item.pickupLocationId === 'string' ? item.pickupLocationId.trim() : '';
     if (!z.string().uuid().safeParse(pickupLoc).success) {
       return { error: 'Sede de retiro inválida en el carrito. Volvé al catálogo y elegí una sede.' };
     }
@@ -195,7 +161,7 @@ export async function processCartCheckout(formData: FormData) {
       .eq('id', item.garment.id)
       .is('deleted_at', null)
       .single();
-      
+
     if (garmentError || !garment) {
       return { error: `La prenda ${item.garment?.name || 'desconocida'} ya no está disponible.` };
     }
@@ -226,52 +192,20 @@ export async function processCartCheckout(formData: FormData) {
     preferenceItems.push({
       id: item.garment.id,
       title: `Alquiler: ${garment.name}`,
-      quantity: 1,
       unit_price: itemTotal,
-      currency_id: 'UYU',
     });
   }
 
-  // 4. Connect MercadoPago
-  if (!mpAccessToken) {
-    return { error: 'Integración de MercadoPago no configurada.' };
-  }
-
-  const externalRef = reservationIds.join(',').slice(0, 256);
-
   try {
-      const client = new MercadoPagoConfig({ accessToken: mpAccessToken });
-      const preference = new Preference(client);
-
-      const prefResult = await preference.create({
-          body: {
-              items: preferenceItems,
-              payer: {
-                  email: email,
-                  name: `${firstName} ${lastName}`,
-              },
-              external_reference: externalRef,
-              metadata: {
-                 reservation_ids: reservationIds.join(','),
-              },
-              back_urls: {
-                  success: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/checkout/success?ref=${reservationIds[0]}`,
-                  failure: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/checkout/failure?ref=${reservationIds[0]}`,
-                  pending: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/checkout/pending?ref=${reservationIds[0]}`,
-              },
-              auto_return: 'approved',
-              statement_descriptor: 'CARPE DIEM Alquiler',
-          }
-      });
-
-      if (!prefResult.init_point) {
-          throw new Error('Sin init_point devuelto por MercadoPago');
-      }
-
-      redirect(prefResult.init_point);
-      
-  } catch (mpError: any) {
-      console.error('MercadoPago Preference Error:', mpError);
-      return { error: 'Error procesando el pago en MercadoPago. Intente más tarde.' };
+    await redirectToPaymentAfterReservations({
+      reservationIds,
+      payerEmail: email,
+      payerName: `${firstName} ${lastName}`,
+      items: preferenceItems,
+      statementDescriptor: 'CARPE DIEM Alquiler',
+    });
+  } catch (mpError) {
+    console.error('processCartCheckout payment redirect:', mpError);
+    return { error: 'Error al iniciar el pago. Intentá de nuevo.' };
   }
 }

@@ -21,7 +21,7 @@ const OPERATIVE_STATUS_LABELS: Record<OperativeStatusValue, string> = {
 };
 
 const RESERVATION_STATUS_LABELS: Record<string, string> = {
-  pending: 'Pendiente',
+  pending: 'Esperando pago',
   confirmed: 'Confirmada',
   paid: 'Pagada',
   delivered: 'Entregada',

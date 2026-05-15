@@ -1,9 +1,10 @@
 -- =============================================================================
--- Seed QA coherente para org maison-demo (tras migraciones, p. ej. db reset).
--- - Limpia reservas/bloqueos/prendas/clientas de esa org (no borra org ni sedes).
--- - Prendas variadas (categorías storefront, talles, tags, precios, fotos distintas).
--- - Reservas + garment_blocks alineados; agenda del día = CURRENT_DATE.
--- - Favoritos / waitlist no se insertan (requieren auth.users reales).
+-- Seed demo maison-demo: catálogo legible para pruebas locales.
+-- - 1 foto única por prenda (sin repetir URLs entre vestidos).
+-- - ~35 clientas con nombres/emails variados.
+-- - Agenda del día + volumen histórico moderado.
+--
+-- Aplicar: supabase db reset   (o pegar este archivo en SQL Editor tras migraciones)
 -- =============================================================================
 
 DO $$
@@ -20,18 +21,80 @@ DECLARE
   i          int;
   gs         int;
   loc_id     uuid;
-  p1         int;
-  p2         int;
-  p3         int;
+  photo_idx  int;
   tag1       text;
   tag2       text;
-  tag3       text;
   cat_ids    uuid[];
   n_cat      int;
   v_pick_d   date;
   v_ret_d    date;
   v_rp       numeric;
   v_dep_amt  numeric;
+  -- Clientas (35 filas, emails fijos para referencias en reservas)
+  c_first    text[] := ARRAY[
+    'María', 'Lucía', 'Valentina', 'Sofía', 'Camila', 'Julieta', 'Agustina', 'Martina',
+    'Florencia', 'Catalina', 'Paula', 'Daniela', 'Carolina', 'Andrea', 'Gabriela', 'Natalia',
+    'Victoria', 'Romina', 'Belén', 'Micaela', 'Josefina', 'Antonella', 'Renata', 'Bianca',
+    'Clara', 'Elena', 'Isabel', 'Teresa', 'Adriana', 'Patricia', 'Silvia', 'Roxana',
+    'Verónica', 'Mariana', 'Fernanda'
+  ];
+  c_last     text[] := ARRAY[
+    'González', 'Fernández', 'Rodríguez', 'Silva', 'Martínez', 'López', 'Pérez', 'García',
+    'Suárez', 'Acosta', 'Romero', 'Castro', 'Benítez', 'Herrera', 'Méndez', 'Viera',
+    'Correa', 'Domínguez', 'Ramos', 'Núñez', 'Costa', 'Molina', 'Pintos', 'Carbajal',
+    'Bentancur', 'Cabrera', 'Fagúndez', 'Lorenzo', 'Alonso', 'Bianchi', 'Morales', 'Reyes',
+    'Santín', 'Iglesias', 'Barreiro'
+  ];
+  c_email    text[] := ARRAY[
+    'maria.gonzalez@ejemplo.uy', 'lucia.fernandez@ejemplo.uy', 'valentina.rodriguez@mail.demo',
+    'sofia.silva@ejemplo.uy', 'camila.martinez@mail.demo', 'julieta.lopez@ejemplo.uy',
+    'agustina.perez@mail.demo', 'martina.garcia@ejemplo.uy', 'florencia.suarez@mail.demo',
+    'catalina.acosta@ejemplo.uy', 'paula.romero@mail.demo', 'daniela.castro@ejemplo.uy',
+    'carolina.benitez@mail.demo', 'andrea.herrera@ejemplo.uy', 'gabriela.mendez@mail.demo',
+    'natalia.viera@ejemplo.uy', 'victoria.correa@mail.demo', 'romina.dominguez@ejemplo.uy',
+    'belen.ramos@mail.demo', 'micaela.nunez@ejemplo.uy', 'josefina.costa@mail.demo',
+    'antonella.molina@ejemplo.uy', 'renata.pintos@mail.demo', 'bianca.carbajal@ejemplo.uy',
+    'clara.bentancur@mail.demo', 'elena.cabrera@ejemplo.uy', 'isabel.fagundez@mail.demo',
+    'teresa.lorenzo@ejemplo.uy', 'adriana.alonso@mail.demo', 'patricia.bianchi@ejemplo.uy',
+    'silvia.morales@mail.demo', 'roxana.reyes@ejemplo.uy', 'veronica.santin@mail.demo',
+    'mariana.iglesias@ejemplo.uy', 'fernanda.barreiro@mail.demo'
+  ];
+  c_phone    text[] := ARRAY[
+    '099412345', '098234567', '097356789', '096478901', '095589012', '094690123',
+    '093701234', '092812345', '091923456', '090134567', '099245678', '098356789',
+    '097467890', '096578901', '095689012', '094790123', '093801234', '092912345',
+    '091023456', '090134567', '099256789', '098367890', '097478901', '096589012',
+    '095690123', '094701234', '093812345', '092923456', '091034567', '090145678',
+    '099267890', '098378901', '097489012', '096590123', '095601234'
+  ];
+  g_names    text[] := ARRAY[
+    'Vestido largo sirena negro', 'Cóctel rojo palabra de honor', 'Gala champagne con broche',
+    'Vestido corto satén verde', 'Novia encaje marfil', 'Vestido largo azul petróleo',
+    'Cóctel dorado lentejuelas', 'Vestido borgoña terciopelo', 'Largo nude escote en V',
+    'Corto blanco civil', 'Gala negro con abertura', 'Vestido coral verano',
+    'Largo espalda descubierta', 'Cóctel negro minimal', 'Vestido lavanda midi',
+    'Gala plateado hombro descubierto', 'Largo rosa palo', 'Cóctel turquesa plisado'
+  ];
+  g_desc     text[] := ARRAY[
+    'Ideal para gala o fiesta formal. Calce marcado en cadera.',
+    'Línea A con falda fluida. Muy favorecedor para eventos de noche.',
+    'Tejido con brillo suave y caída elegante.',
+    'Tono intenso para cocktail y recepciones.',
+    'Clásico de ceremonia, manga larga de encaje.',
+    'Azul profundo, silueta limpia y contemporánea.',
+    'Brillo discreto en hombros y cintura.',
+    'Textura rica, perfecto para invierno.',
+    'Nude universal, largo hasta el piso.',
+    'Corte recto para civil o after party.',
+    'Impacto visual con abertura lateral moderada.',
+    'Color vivo para eventos de día o exterior.',
+    'Espalda diseño, ideal para fotos.',
+    'Silueta sobria y atemporal.',
+    'Largo midi, tono pastel de tendencia.',
+    'Hombros al descubierto con drapeado.',
+    'Rosa suave, falda amplia.',
+    'Plisado ligero, movimiento al caminar.'
+  ];
 BEGIN
   SELECT id INTO v_org FROM public.organizations WHERE slug = 'maison-demo' LIMIT 1;
   IF v_org IS NULL THEN
@@ -65,7 +128,6 @@ BEGIN
     RETURNING id INTO v_loc_col;
   END IF;
 
-  -- Limpieza FK-safe
   DELETE FROM public.favorite_garments fg
   USING public.garments g
   WHERE fg.garment_id = g.id AND g.organization_id = v_org;
@@ -76,18 +138,13 @@ BEGIN
   DELETE FROM public.garments WHERE organization_id = v_org;
   DELETE FROM public.customers WHERE organization_id = v_org;
 
-  -- Clientas QA (emails determinísticos)
-  FOR i IN 1..180 LOOP
+  -- 35 clientas
+  FOR i IN 1..array_length(c_first, 1) LOOP
     INSERT INTO public.customers (organization_id, first_name, last_name, email, phone)
-    VALUES (
-      v_org,
-      (ARRAY['María','Lucía','Valentina','Sofía','Camila','Julieta'])[1 + ((i - 1) % 6)],
-      'QA ' || lpad(i::text, 3, '0'),
-      'qa-' || lpad(i::text, 3, '0') || '@maison-demo.invalid',
-      '09' || lpad((8800000 + i)::text, 8, '0')
-    );
+    VALUES (v_org, c_first[i], c_last[i], c_email[i], c_phone[i]);
   END LOOP;
 
+  -- 29 URLs distintas (1 por prenda)
   t_urls := ARRAY[
     'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800&q=80',
     'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=800&q=80',
@@ -112,22 +169,25 @@ BEGIN
     'https://images.unsplash.com/photo-1496747611173-043a258b693f?w=800&q=80',
     'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&q=80',
     'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800&q=80',
-    'https://images.unsplash.com/photo-1562784439-4fbc317a0c42?w=800&q=80'
+    'https://images.unsplash.com/photo-1562784439-4fbc317a0c42?w=800&q=80',
+    'https://images.unsplash.com/photo-1485230893291-40f5b48584e2?w=800&q=80',
+    'https://images.unsplash.com/photo-1502716110388-9d51ddfee1e6?w=800&q=80',
+    'https://images.unsplash.com/photo-1519657334134-44a8e809d1b4?w=800&q=80',
+    'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&q=80',
+    'https://images.unsplash.com/photo-1515377905703-c4788e51b152?w=800&q=80'
   ];
 
-  cats := ARRAY['vestido-largo','vestido-corto','gala','casamiento','cóctel'];
-  sizes := ARRAY['XS','S','M','L','XL','Plus Size','XXL'];
+  cats := ARRAY['vestido-largo', 'vestido-corto', 'gala', 'casamiento', 'cóctel'];
+  sizes := ARRAY['XS', 'S', 'M', 'L', 'XL', 'Plus Size'];
 
-  -- Catálogo: 28 prendas disponibles, sin reservas (sin bloqueos activos)
-  FOR gs IN 1..28 LOOP
+  photo_idx := 0;
+
+  -- Catálogo: 18 prendas disponibles
+  FOR gs IN 1..18 LOOP
+    photo_idx := photo_idx + 1;
     loc_id := CASE WHEN gs % 2 = 1 THEN v_loc_mvd ELSE v_loc_col END;
-    p1 := 1 + ((gs - 1) % array_length(t_urls, 1));
-    p2 := 1 + (gs % array_length(t_urls, 1));
-    p3 := 1 + ((gs + 3) % array_length(t_urls, 1));
-
-    tag1 := (ARRAY['gala','boda','casamiento','cocktail','fiesta','xv','verano','floral','novia','graduación'])[1 + ((gs - 1) % 10)];
-    tag2 := (ARRAY['negro','rojo','nude','rosa','azul','verde','dorado','borgoña','turquesa','champagne'])[1 + ((gs + 2) % 10)];
-    tag3 := (ARRAY['largo','corto','sirena','minimal','encaje','lentejuelas'])[1 + ((gs + 4) % 6)];
+    tag1 := (ARRAY['gala', 'boda', 'casamiento', 'cocktail', 'fiesta', 'civil'])[1 + ((gs - 1) % 6)];
+    tag2 := (ARRAY['negro', 'rojo', 'nude', 'rosa', 'azul', 'verde', 'dorado', 'borgoña'])[1 + ((gs - 1) % 8)];
 
     INSERT INTO public.garments (
       organization_id, sku, name, description, category, size_label,
@@ -136,78 +196,72 @@ BEGIN
       location_id, notes
     ) VALUES (
       v_org,
-      'QA-CAT-' || lpad(gs::text, 3, '0'),
-      'Vestido QA colección ' || gs::text,
-      'Prenda de prueba coherente con el catálogo público.',
+      'CAT-' || lpad(gs::text, 3, '0'),
+      g_names[gs],
+      g_desc[gs],
       cats[1 + ((gs - 1) % array_length(cats, 1))],
       sizes[1 + ((gs - 1) % array_length(sizes, 1))],
       78 + (gs * 2),
       60 + gs,
       86 + gs,
       85 + ((gs * 11) % 75),
-      (1150 + gs * 220)::numeric,
-      greatest(350::numeric, round((1150 + gs * 220) / 3.0)::numeric),
+      (1250 + gs * 180)::numeric,
+      greatest(350::numeric, round((1250 + gs * 180) / 3.0)::numeric),
       'available',
-      ARRAY[t_urls[p1], t_urls[p2], t_urls[p3]],
-      ARRAY[tag1, tag2, tag3, 'qa-seed']::text[],
+      ARRAY[t_urls[photo_idx]],
+      ARRAY[tag1, tag2, 'demo']::text[],
       loc_id,
-      'QA seed catálogo'
+      NULL
     );
   END LOOP;
 
-  -- Prendas dedicadas agenda (hoy)
+  -- Agenda hoy (5 prendas, fotos 19–23)
+  photo_idx := 18;
   INSERT INTO public.garments (organization_id, sku, name, description, category, size_label, chest_cm, waist_cm, hip_cm, length_cm, rental_price, deposit_amount, operative_status, photos_urls, tags, location_id)
   VALUES
-    (v_org, 'AGD-PICK-1', 'Agenda — retiro hoy A', 'Reserva pickup hoy.', 'gala', 'M', 88, 70, 94, 140, 2800, 900, 'available', ARRAY[t_urls[1], t_urls[2]], ARRAY['gala','qa-agenda']::text[], v_loc_mvd),
-    (v_org, 'AGD-PICK-2', 'Agenda — retiro hoy B', 'Reserva pickup hoy.', 'cóctel', 'S', 84, 66, 90, 95, 1900, 650, 'available', ARRAY[t_urls[3], t_urls[4]], ARRAY['cocktail','qa-agenda']::text[], v_loc_col),
-    (v_org, 'AGD-PICK-3', 'Agenda — retiro hoy C', 'Reserva pickup hoy.', 'vestido-largo', 'M', 88, 70, 94, 148, 2400, 800, 'available', ARRAY[t_urls[2], t_urls[5]], ARRAY['boda','qa-agenda']::text[], v_loc_mvd),
-    (v_org, 'AGD-RET-1', 'Agenda — devolución hoy A', 'Entregada; devuelve hoy.', 'vestido-largo', 'L', 92, 74, 100, 150, 3200, 1100, 'available', ARRAY[t_urls[5], t_urls[6]], ARRAY['boda','qa-agenda']::text[], v_loc_mvd),
-    (v_org, 'AGD-RET-2', 'Agenda — devolución hoy B', 'Entregada; devuelve hoy.', 'casamiento', 'M', 88, 70, 94, 145, 3500, 1200, 'available', ARRAY[t_urls[7], t_urls[8]], ARRAY['casamiento','qa-agenda']::text[], v_loc_col),
-    (v_org, 'AGD-EVT-1', 'Agenda — evento hoy A', 'Evento hoy.', 'gala', 'S', 82, 64, 88, 138, 4100, 1400, 'available', ARRAY[t_urls[9], t_urls[10]], ARRAY['gala','formal','qa-agenda']::text[], v_loc_mvd),
-    (v_org, 'AGD-EVT-2', 'Agenda — evento hoy B', 'Evento hoy.', 'vestido-corto', 'XS', 80, 62, 86, 88, 1600, 550, 'available', ARRAY[t_urls[11], t_urls[12]], ARRAY['fiesta','qa-agenda']::text[], v_loc_col);
+    (v_org, 'AGD-PICK-1', 'Retiro hoy — Gala esmeralda', 'Reserva con retiro en el día.', 'gala', 'M', 88, 70, 94, 140, 2800, 900, 'available', ARRAY[t_urls[19]], ARRAY['gala', 'verde', 'demo']::text[], v_loc_mvd),
+    (v_org, 'AGD-PICK-2', 'Retiro hoy — Cóctel burdeos', 'Cliente retira hoy en Colonia.', 'cóctel', 'S', 84, 66, 90, 95, 1900, 650, 'available', ARRAY[t_urls[20]], ARRAY['cocktail', 'borgoña', 'demo']::text[], v_loc_col),
+    (v_org, 'AGD-RET-1', 'Devolución hoy — Largo marfil', 'Entregado; vuelve hoy.', 'vestido-largo', 'L', 92, 74, 100, 150, 3200, 1100, 'available', ARRAY[t_urls[21]], ARRAY['boda', 'marfil', 'demo']::text[], v_loc_mvd),
+    (v_org, 'AGD-EVT-1', 'Evento hoy — Gala plata', 'Fiesta esta noche.', 'gala', 'S', 82, 64, 88, 138, 4100, 1400, 'available', ARRAY[t_urls[22]], ARRAY['gala', 'plateado', 'demo']::text[], v_loc_mvd),
+    (v_org, 'AGD-EVT-2', 'Evento hoy — Corto fucsia', 'Cumpleaños / after.', 'vestido-corto', 'XS', 80, 62, 86, 88, 1600, 550, 'available', ARRAY[t_urls[23]], ARRAY['fiesta', 'fucsia', 'demo']::text[], v_loc_col);
 
-  -- Histórico devuelto (prendas siguen en catálogo sin bloqueo activo)
-  FOR gs IN 1..5 LOOP
+  -- Histórico (2 prendas, fotos 24–25)
+  FOR gs IN 1..2 LOOP
+    photo_idx := 23 + gs;
     INSERT INTO public.garments (
       organization_id, sku, name, description, category, size_label,
       chest_cm, waist_cm, hip_cm, length_cm, rental_price, deposit_amount,
-      operative_status, photos_urls, tags, location_id, notes
+      operative_status, photos_urls, tags, location_id
     ) VALUES (
       v_org,
-      'QA-HIST-' || lpad(gs::text, 2, '0'),
-      'Vestido histórico ' || gs::text,
-      'Con reservas pasadas liberadas.',
+      'HIST-' || lpad(gs::text, 2, '0'),
+      'Archivo — Largo clásico ' || gs::text,
+      'Con alquileres pasados ya devueltos.',
       cats[1 + ((gs - 1) % array_length(cats, 1))],
-      sizes[1 + ((gs - 1) % array_length(sizes, 1))],
-      84 + gs, 66 + gs, 90 + gs, 120 + gs * 5,
-      (1400 + gs * 100)::numeric,
+      sizes[gs + 2],
+      84 + gs, 66 + gs, 90 + gs, 120 + gs * 8,
+      (1500 + gs * 150)::numeric,
       500::numeric,
       'available',
-      ARRAY[
-        t_urls[1 + ((gs - 1) % array_length(t_urls, 1))],
-        t_urls[1 + (gs % array_length(t_urls, 1))]
-      ],
-      ARRAY['qa-hist','demo']::text[],
-      CASE WHEN gs % 2 = 1 THEN v_loc_mvd ELSE v_loc_col END,
-      'QA seed histórico'
+      ARRAY[t_urls[photo_idx]],
+      ARRAY['archivo', 'demo']::text[],
+      CASE WHEN gs % 2 = 1 THEN v_loc_mvd ELSE v_loc_col END
     );
   END LOOP;
 
-  -- Estados operativos + papelera
+  -- Estados operativos (3) + papelera (1), fotos 26–29
   INSERT INTO public.garments (organization_id, sku, name, description, category, size_label, chest_cm, waist_cm, hip_cm, length_cm, rental_price, deposit_amount, operative_status, photos_urls, tags, location_id)
   VALUES
-    (v_org, 'QA-OPS-CLEAN', 'En limpieza (no catálogo)', 'Tintorería.', 'cóctel', 'M', 88, 70, 94, 100, 2000, 700, 'in_cleaning', ARRAY[t_urls[13]], ARRAY['qa-ops']::text[], v_loc_mvd),
-    (v_org, 'QA-OPS-PROC', 'En procesamiento', 'Post-devolución.', 'gala', 'L', 92, 74, 100, 142, 3000, 1000, 'processing', ARRAY[t_urls[14]], ARRAY['qa-ops']::text[], v_loc_mvd),
-    (v_org, 'QA-OPS-RET', 'Retirado de catálogo', 'Baja.', 'vestido-largo', 'S', 84, 66, 90, 140, 2500, 850, 'retired', ARRAY[t_urls[15]], ARRAY['qa-ops']::text[], v_loc_col);
+    (v_org, 'OPS-CLEAN', 'En limpieza — Cóctel crema', 'Tintorería en curso.', 'cóctel', 'M', 88, 70, 94, 100, 2000, 700, 'in_cleaning', ARRAY[t_urls[26]], ARRAY['limpieza', 'demo']::text[], v_loc_mvd),
+    (v_org, 'OPS-PROC', 'Procesamiento — Gala azul', 'Post-devolución.', 'gala', 'L', 92, 74, 100, 142, 3000, 1000, 'processing', ARRAY[t_urls[27]], ARRAY['procesamiento', 'demo']::text[], v_loc_mvd),
+    (v_org, 'OPS-RET', 'Baja — Largo vintage', 'Fuera de catálogo público.', 'vestido-largo', 'S', 84, 66, 90, 140, 2500, 850, 'retired', ARRAY[t_urls[28]], ARRAY['baja', 'demo']::text[], v_loc_col);
 
   INSERT INTO public.garments (organization_id, sku, name, description, category, size_label, chest_cm, waist_cm, hip_cm, length_cm, rental_price, deposit_amount, operative_status, photos_urls, tags, location_id, deleted_at)
   VALUES
-    (v_org, 'QA-TRASH-01', 'En papelera (soft delete)', 'Borrado lógico.', 'cóctel', 'M', 88, 70, 94, 98, 1800, 600, 'available', ARRAY[t_urls[16]], ARRAY['qa-trash']::text[], v_loc_mvd, now());
+    (v_org, 'TRASH-01', 'Papelera — Corto descartado', 'Eliminado del catálogo.', 'cóctel', 'M', 88, 70, 94, 98, 1800, 600, 'available', ARRAY[t_urls[29]], ARRAY['papelera', 'demo']::text[], v_loc_mvd, now());
 
-  -- Helper: primera clienta por email
-  SELECT id INTO v_cid FROM public.customers WHERE organization_id = v_org AND email = 'qa-001@maison-demo.invalid';
-
-  -- Retiros hoy (pending / confirmed / paid)
+  -- --- Reservas agenda (hoy) ---
+  SELECT id INTO v_cid FROM public.customers WHERE organization_id = v_org AND email = c_email[1];
   SELECT id INTO v_gid FROM public.garments WHERE organization_id = v_org AND sku = 'AGD-PICK-1';
   INSERT INTO public.reservations (
     organization_id, customer_id, garment_id, event_date, pickup_date, return_date, status,
@@ -217,10 +271,9 @@ BEGIN
     v_org, v_cid, v_gid, CURRENT_DATE + 2, CURRENT_DATE, CURRENT_DATE + 5, 'pending',
     2800, 900, 0, 3700, v_loc_mvd, 'seed-' || gen_random_uuid()::text, NULL
   ) RETURNING id INTO v_rid;
-  INSERT INTO public.garment_blocks (organization_id, garment_id, date_from, date_to, block_type, source_id, source_type)
-  VALUES (v_org, v_gid, CURRENT_DATE, CURRENT_DATE + 5, 'reservation', v_rid, 'reservation');
+  -- pending web: sin bloqueo hasta confirmar pago (ver confirm_reservation_payment)
 
-  SELECT id INTO v_cid FROM public.customers WHERE organization_id = v_org AND email = 'qa-002@maison-demo.invalid';
+  SELECT id INTO v_cid FROM public.customers WHERE organization_id = v_org AND email = c_email[2];
   SELECT id INTO v_gid FROM public.garments WHERE organization_id = v_org AND sku = 'AGD-PICK-2';
   INSERT INTO public.reservations (
     organization_id, customer_id, garment_id, event_date, pickup_date, return_date, status,
@@ -233,21 +286,7 @@ BEGIN
   INSERT INTO public.garment_blocks (organization_id, garment_id, date_from, date_to, block_type, source_id, source_type)
   VALUES (v_org, v_gid, CURRENT_DATE, CURRENT_DATE + 4, 'reservation', v_rid, 'reservation');
 
-  SELECT id INTO v_cid FROM public.customers WHERE organization_id = v_org AND email = 'qa-003@maison-demo.invalid';
-  SELECT id INTO v_gid FROM public.garments WHERE organization_id = v_org AND sku = 'AGD-PICK-3';
-  INSERT INTO public.reservations (
-    organization_id, customer_id, garment_id, event_date, pickup_date, return_date, status,
-    rental_price, deposit_amount, discount_amount, total_amount,
-    pickup_location_id, mp_preference_id, mp_payment_status
-  ) VALUES (
-    v_org, v_cid, v_gid, CURRENT_DATE + 3, CURRENT_DATE, CURRENT_DATE + 6, 'paid',
-    2400, 800, 0, 3200, v_loc_mvd, 'seed-' || gen_random_uuid()::text, 'approved'
-  ) RETURNING id INTO v_rid;
-  INSERT INTO public.garment_blocks (organization_id, garment_id, date_from, date_to, block_type, source_id, source_type)
-  VALUES (v_org, v_gid, CURRENT_DATE, CURRENT_DATE + 6, 'reservation', v_rid, 'reservation');
-
-  -- Devoluciones hoy (delivered, pickup en el pasado)
-  SELECT id INTO v_cid FROM public.customers WHERE organization_id = v_org AND email = 'qa-004@maison-demo.invalid';
+  SELECT id INTO v_cid FROM public.customers WHERE organization_id = v_org AND email = c_email[4];
   SELECT id INTO v_gid FROM public.garments WHERE organization_id = v_org AND sku = 'AGD-RET-1';
   INSERT INTO public.reservations (
     organization_id, customer_id, garment_id, event_date, pickup_date, return_date, status,
@@ -260,21 +299,7 @@ BEGIN
   INSERT INTO public.garment_blocks (organization_id, garment_id, date_from, date_to, block_type, source_id, source_type)
   VALUES (v_org, v_gid, CURRENT_DATE - 7, CURRENT_DATE, 'reservation', v_rid, 'reservation');
 
-  SELECT id INTO v_cid FROM public.customers WHERE organization_id = v_org AND email = 'qa-005@maison-demo.invalid';
-  SELECT id INTO v_gid FROM public.garments WHERE organization_id = v_org AND sku = 'AGD-RET-2';
-  INSERT INTO public.reservations (
-    organization_id, customer_id, garment_id, event_date, pickup_date, return_date, status,
-    rental_price, deposit_amount, discount_amount, total_amount,
-    pickup_location_id, mp_preference_id, mp_payment_status
-  ) VALUES (
-    v_org, v_cid, v_gid, CURRENT_DATE - 2, CURRENT_DATE - 5, CURRENT_DATE, 'delivered',
-    3500, 1200, 0, 4700, v_loc_col, 'seed-' || gen_random_uuid()::text, 'approved'
-  ) RETURNING id INTO v_rid;
-  INSERT INTO public.garment_blocks (organization_id, garment_id, date_from, date_to, block_type, source_id, source_type)
-  VALUES (v_org, v_gid, CURRENT_DATE - 5, CURRENT_DATE, 'reservation', v_rid, 'reservation');
-
-  -- Eventos hoy
-  SELECT id INTO v_cid FROM public.customers WHERE organization_id = v_org AND email = 'qa-006@maison-demo.invalid';
+  SELECT id INTO v_cid FROM public.customers WHERE organization_id = v_org AND email = c_email[6];
   SELECT id INTO v_gid FROM public.garments WHERE organization_id = v_org AND sku = 'AGD-EVT-1';
   INSERT INTO public.reservations (
     organization_id, customer_id, garment_id, event_date, pickup_date, return_date, status,
@@ -287,7 +312,7 @@ BEGIN
   INSERT INTO public.garment_blocks (organization_id, garment_id, date_from, date_to, block_type, source_id, source_type)
   VALUES (v_org, v_gid, CURRENT_DATE + 1, CURRENT_DATE + 5, 'reservation', v_rid, 'reservation');
 
-  SELECT id INTO v_cid FROM public.customers WHERE organization_id = v_org AND email = 'qa-007@maison-demo.invalid';
+  SELECT id INTO v_cid FROM public.customers WHERE organization_id = v_org AND email = c_email[8];
   SELECT id INTO v_gid FROM public.garments WHERE organization_id = v_org AND sku = 'AGD-EVT-2';
   INSERT INTO public.reservations (
     organization_id, customer_id, garment_id, event_date, pickup_date, return_date, status,
@@ -300,28 +325,28 @@ BEGIN
   INSERT INTO public.garment_blocks (organization_id, garment_id, date_from, date_to, block_type, source_id, source_type)
   VALUES (v_org, v_gid, CURRENT_DATE, CURRENT_DATE + 3, 'reservation', v_rid, 'reservation');
 
-  -- Histórico: reservas devueltas (bloque liberado) sobre QA-HIST-*
-  FOR gs IN 1..5 LOOP
-    SELECT id INTO v_gid FROM public.garments WHERE organization_id = v_org AND sku = 'QA-HIST-' || lpad(gs::text, 2, '0');
-    SELECT id INTO v_cid FROM public.customers WHERE organization_id = v_org AND email = 'qa-' || lpad((8 + gs)::text, 3, '0') || '@maison-demo.invalid';
+  -- Histórico devuelto (HIST-*)
+  FOR gs IN 1..2 LOOP
+    SELECT id INTO v_gid FROM public.garments WHERE organization_id = v_org AND sku = 'HIST-' || lpad(gs::text, 2, '0');
+    SELECT id INTO v_cid FROM public.customers WHERE organization_id = v_org AND email = c_email[10 + gs];
     INSERT INTO public.reservations (
       organization_id, customer_id, garment_id, event_date, pickup_date, return_date, status,
       rental_price, deposit_amount, discount_amount, total_amount,
       pickup_location_id, mp_preference_id, mp_payment_status, actual_return_date
     ) VALUES (
       v_org, v_cid, v_gid,
-      (CURRENT_DATE - 120 - gs)::date,
-      (CURRENT_DATE - 120 - gs)::date,
-      (CURRENT_DATE - 116 - gs)::date,
+      (CURRENT_DATE - 90 - gs * 10)::date,
+      (CURRENT_DATE - 92 - gs * 10)::date,
+      (CURRENT_DATE - 88 - gs * 10)::date,
       'returned',
-      (1400 + gs * 100)::numeric,
+      (1500 + gs * 150)::numeric,
       500::numeric,
       0,
-      (1900 + gs * 100)::numeric,
+      (2000 + gs * 150)::numeric,
       (SELECT location_id FROM public.garments WHERE id = v_gid),
       'seed-hist-' || gs::text,
       'approved',
-      (CURRENT_DATE - 115 - gs)::date
+      (CURRENT_DATE - 87 - gs * 10)::date
     ) RETURNING id INTO v_rid;
 
     INSERT INTO public.garment_blocks (
@@ -329,25 +354,23 @@ BEGIN
       block_type, source_id, source_type, released_at, release_reason
     ) VALUES (
       v_org, v_gid,
-      (CURRENT_DATE - 120 - gs)::date,
-      (CURRENT_DATE - 116 - gs)::date,
-      'reservation',
-      v_rid,
-      'reservation',
-      (CURRENT_DATE - 115 - gs)::date + interval '1 day',
+      (CURRENT_DATE - 92 - gs * 10)::date,
+      (CURRENT_DATE - 88 - gs * 10)::date,
+      'reservation', v_rid, 'reservation',
+      (CURRENT_DATE - 87 - gs * 10)::date + interval '1 day',
       'returned'
     );
   END LOOP;
 
-  -- Volumen histórico sobre catálogo QA-CAT (devueltas + bloques liberados)
+  -- Bulk histórico sobre catálogo CAT-* (~80 devueltas)
   SELECT coalesce(array_agg(id ORDER BY sku), ARRAY[]::uuid[]) INTO cat_ids
   FROM public.garments
-  WHERE organization_id = v_org AND sku LIKE 'QA-CAT-%';
+  WHERE organization_id = v_org AND sku LIKE 'CAT-%';
 
   n_cat := coalesce(array_length(cat_ids, 1), 0);
 
   IF n_cat > 0 THEN
-    FOR gs IN 1..520 LOOP
+    FOR gs IN 1..80 LOOP
       v_gid := cat_ids[1 + ((gs - 1) % n_cat)];
 
       SELECT rental_price, deposit_amount, coalesce(location_id, v_loc_mvd)
@@ -357,10 +380,10 @@ BEGIN
 
       SELECT id INTO v_cid FROM public.customers
       WHERE organization_id = v_org
-        AND email = 'qa-' || lpad(((gs * 13) % 180 + 1)::text, 3, '0') || '@maison-demo.invalid';
+        AND email = c_email[1 + ((gs * 7) % array_length(c_email, 1))];
 
-      v_pick_d := (CURRENT_DATE - (30 + ((gs * 31) % 371)))::date;
-      v_ret_d := (v_pick_d + (2 + (gs % 6)))::date;
+      v_pick_d := (CURRENT_DATE - (20 + ((gs * 17) % 300)))::date;
+      v_ret_d := (v_pick_d + (2 + (gs % 5)))::date;
 
       INSERT INTO public.reservations (
         organization_id, customer_id, garment_id, event_date, pickup_date, return_date, status,
@@ -391,9 +414,9 @@ BEGIN
       );
     END LOOP;
 
-    -- Futuras canceladas (bloque liberado) para variedad en listados admin
-    FOR gs IN 1..25 LOOP
-      v_gid := cat_ids[1 + ((gs * 11) % n_cat)];
+    -- Futuras canceladas (8)
+    FOR gs IN 1..8 LOOP
+      v_gid := cat_ids[1 + ((gs * 3) % n_cat)];
 
       SELECT rental_price, deposit_amount, coalesce(location_id, v_loc_mvd)
       INTO v_rp, v_dep_amt, loc_id
@@ -402,10 +425,10 @@ BEGIN
 
       SELECT id INTO v_cid FROM public.customers
       WHERE organization_id = v_org
-        AND email = 'qa-' || lpad(((gs * 7) % 180 + 1)::text, 3, '0') || '@maison-demo.invalid';
+        AND email = c_email[1 + ((gs * 5) % array_length(c_email, 1))];
 
-      v_pick_d := (CURRENT_DATE + 40 + ((gs * 5) % 120))::date;
-      v_ret_d := (v_pick_d + (3 + (gs % 5)))::date;
+      v_pick_d := (CURRENT_DATE + 30 + (gs * 12))::date;
+      v_ret_d := (v_pick_d + 4)::date;
 
       INSERT INTO public.reservations (
         organization_id, customer_id, garment_id, event_date, pickup_date, return_date, status,
@@ -420,7 +443,7 @@ BEGIN
         v_rp, v_dep_amt, 0,
         (v_rp + v_dep_amt)::numeric(10, 2),
         loc_id,
-        'seed-fut-can-' || gs::text,
+        'seed-cancel-' || gs::text,
         NULL
       ) RETURNING id INTO v_rid;
 
@@ -434,25 +457,25 @@ BEGIN
         'cancelled'
       );
     END LOOP;
-  END IF;
 
-  -- Cancelada (bloque liberado)
-  SELECT id INTO v_gid FROM public.garments WHERE organization_id = v_org AND sku = 'QA-CAT-010';
-  SELECT id INTO v_cid FROM public.customers WHERE organization_id = v_org AND email = 'qa-010@maison-demo.invalid';
-  INSERT INTO public.reservations (
-    organization_id, customer_id, garment_id, event_date, pickup_date, return_date, status,
-    rental_price, deposit_amount, discount_amount, total_amount,
-    pickup_location_id, mp_preference_id, mp_payment_status
-  ) VALUES (
-    v_org, v_cid, v_gid, CURRENT_DATE + 20, CURRENT_DATE + 18, CURRENT_DATE + 22, 'cancelled',
-    2000, 700, 0, 2700, v_loc_mvd, 'seed-cancel', NULL
-  ) RETURNING id INTO v_rid;
-  INSERT INTO public.garment_blocks (
-    organization_id, garment_id, date_from, date_to,
-    block_type, source_id, source_type, released_at, release_reason
-  ) VALUES (
-    v_org, v_gid, CURRENT_DATE + 18, CURRENT_DATE + 22,
-    'reservation', v_rid, 'reservation', now(), 'cancelled'
-  );
+    -- Una cancelada puntual en CAT-005
+    SELECT id INTO v_gid FROM public.garments WHERE organization_id = v_org AND sku = 'CAT-005';
+    SELECT id INTO v_cid FROM public.customers WHERE organization_id = v_org AND email = c_email[15];
+    INSERT INTO public.reservations (
+      organization_id, customer_id, garment_id, event_date, pickup_date, return_date, status,
+      rental_price, deposit_amount, discount_amount, total_amount,
+      pickup_location_id, mp_preference_id, mp_payment_status
+    ) VALUES (
+      v_org, v_cid, v_gid, CURRENT_DATE + 25, CURRENT_DATE + 23, CURRENT_DATE + 27, 'cancelled',
+      2000, 700, 0, 2700, v_loc_mvd, 'seed-cancel-cat005', NULL
+    ) RETURNING id INTO v_rid;
+    INSERT INTO public.garment_blocks (
+      organization_id, garment_id, date_from, date_to,
+      block_type, source_id, source_type, released_at, release_reason
+    ) VALUES (
+      v_org, v_gid, CURRENT_DATE + 23, CURRENT_DATE + 27,
+      'reservation', v_rid, 'reservation', now(), 'cancelled'
+    );
+  END IF;
 
 END $$;

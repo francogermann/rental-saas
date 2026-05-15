@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import { z } from 'zod';
 import { processCheckout } from '@/lib/actions/checkout';
 import { formatUy } from '@/lib/utils';
+import { CHECKOUT_PAYMENT_HINT, getCheckoutSubmitLabel } from '@/lib/payments/checkout-pay-copy';
 
 type GarmentCheckoutRow = {
   name: string;
@@ -96,7 +97,7 @@ export default async function CheckoutPage({
 
       <div className="container mx-auto max-w-screen-md py-24 px-6 relative z-10">
         <h1 className="font-display text-3xl md:text-4xl font-bold mb-2 tracking-tight">Finalizar Reserva</h1>
-        <p className="text-muted-foreground mb-10">Completá tus datos para confirmar el alquiler.</p>
+        <p className="text-muted-foreground mb-10">Completá tus datos para continuar al pago.</p>
 
         <div className="grid md:grid-cols-2 gap-8">
           {/* Checkout Form */}
@@ -161,13 +162,14 @@ export default async function CheckoutPage({
                 />
               </div>
 
-              <div className="pt-6 mt-4 border-t border-white/10">
+              <div className="pt-6 mt-4 border-t border-white/10 space-y-3">
                 <button
                   type="submit"
                   className="w-full h-12 bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white font-semibold rounded-2xl shadow-glow hover:shadow-glow-lg hover:scale-[1.02] active:scale-95 transition-all duration-300"
                 >
-                  Confirmar y Pagar
+                  {getCheckoutSubmitLabel()}
                 </button>
+                <p className="text-center text-xs text-muted-foreground opacity-70">{CHECKOUT_PAYMENT_HINT}</p>
               </div>
             </form>
           </div>

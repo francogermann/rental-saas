@@ -570,6 +570,24 @@ export type Database = {
         }
         Returns: Json
       }
+      confirm_reservation_payment: {
+        Args: {
+          p_reservation_id: string
+          p_mp_payment_id?: string
+          p_mp_payment_status?: string
+        }
+        Returns: Json
+      }
+      cancel_pending_reservation: {
+        Args: {
+          p_reservation_id: string
+        }
+        Returns: Json
+      }
+      expire_pending_reservations: {
+        Args: Record<string, never>
+        Returns: number
+      }
       get_available_garments: {
         Args: {
           p_category?: string
