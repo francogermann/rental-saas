@@ -24,7 +24,7 @@ export default async function AdminReservationsPage() {
     <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-4xl font-bold tracking-tight">Operaciones y Reservas</h1>
+          <h1 className="font-admin-display text-4xl font-bold tracking-tight">Operaciones y Reservas</h1>
           <p className="text-muted-foreground mt-1">Gestiona los retiros y devoluciones de prendas.</p>
         </div>
       </div>

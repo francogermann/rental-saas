@@ -18,7 +18,7 @@ export default async function AdminGarmentsPage() {
     <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-4xl font-bold tracking-tight">Catálogo de Prendas</h1>
+          <h1 className="font-admin-display text-4xl font-bold tracking-tight">Catálogo de Prendas</h1>
           <p className="text-muted-foreground mt-1">Gestiona el inventario, precios y estados.</p>
         </div>
         <a href="/admin/garments/new" className="bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white rounded-lg px-6 py-2 text-sm font-semibold transition-all shadow-glow flex items-center justify-center">

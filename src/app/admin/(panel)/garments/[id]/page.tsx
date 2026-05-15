@@ -25,7 +25,7 @@ export default async function EditGarmentPage({ params }: { params: { id: string
           <span className="text-muted-foreground text-xl">←</span>
         </a>
         <div>
-          <h1 className="font-display text-4xl font-bold tracking-tight">Editar Prenda</h1>
+          <h1 className="font-admin-display text-4xl font-bold tracking-tight">Editar Prenda</h1>
           <p className="text-muted-foreground mt-1">Modifica los detalles, precios o estado operativo.</p>
         </div>
       </div>

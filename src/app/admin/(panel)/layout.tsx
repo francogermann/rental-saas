@@ -7,7 +7,7 @@ export default function AdminPanelLayout({ children }: { children: React.ReactNo
     <div className="min-h-screen bg-zinc-950 text-foreground flex">
       <aside className="w-64 border-r border-white/10 flex flex-col pt-6 shrink-0 z-10 bg-black/50 backdrop-blur-3xl shadow-xl">
         <div className="px-6 pb-6 border-b border-white/5">
-          <a href="/admin/dashboard" className="font-display text-xl font-bold tracking-wide italic bg-gradient-to-r from-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
+          <a href="/admin/dashboard" className="font-admin-display text-xl font-semibold tracking-tight bg-gradient-to-r from-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
             CarpeDiem Admin.
           </a>
         </div>

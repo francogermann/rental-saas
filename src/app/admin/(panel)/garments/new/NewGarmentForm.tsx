@@ -34,7 +34,7 @@ export default function NewGarmentForm({ locations }: Props) {
           <span className="text-muted-foreground text-xl">←</span>
         </a>
         <div>
-          <h1 className="font-display text-4xl font-bold tracking-tight">Nueva Prenda</h1>
+          <h1 className="font-admin-display text-4xl font-bold tracking-tight">Nueva Prenda</h1>
           <p className="text-muted-foreground mt-1">
             Marcá los talles en los que tenés esta pieza. Se creará un registro por talle (mismo precio y fotos), con SKU{' '}
             <span className="text-fuchsia-300/90">BASE-TALLE</span>.

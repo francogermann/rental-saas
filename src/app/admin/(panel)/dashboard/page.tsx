@@ -36,7 +36,7 @@ export default async function AdminDashboardPage() {
       
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-4xl font-bold tracking-tight">Tablero General</h1>
+          <h1 className="font-admin-display text-4xl font-bold tracking-tight">Tablero General</h1>
           <p className="text-muted-foreground mt-1">Resumen de operaciones de Carpe Diem.</p>
         </div>
         <div className="flex gap-3">
@@ -58,7 +58,7 @@ export default async function AdminDashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold font-display">{totalGarments ?? 0}</div>
+            <div className="text-4xl font-bold font-admin-display">{totalGarments ?? 0}</div>
             <p className="text-xs text-muted-foreground mt-1">prendas registradas</p>
           </CardContent>
         </Card>
@@ -70,7 +70,7 @@ export default async function AdminDashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold font-display">{totalReservations ?? 0}</div>
+            <div className="text-4xl font-bold font-admin-display">{totalReservations ?? 0}</div>
             <p className="text-xs text-muted-foreground mt-1">históricas</p>
           </CardContent>
         </Card>
@@ -82,7 +82,7 @@ export default async function AdminDashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold text-fuchsia-100 font-display">{pendingDeliveries ?? 0}</div>
+            <div className="text-4xl font-bold text-fuchsia-100 font-admin-display">{pendingDeliveries ?? 0}</div>
             <p className="text-xs text-fuchsia-300/70 mt-1">reservas confirmadas</p>
           </CardContent>
         </Card>
@@ -91,7 +91,7 @@ export default async function AdminDashboardPage() {
       {/* Action Items List */}
       <div className="bg-white/[0.02] backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
         <div className="p-6 border-b border-white/5 bg-white/[0.01]">
-          <h2 className="text-lg font-semibold font-display">Próximos Retiros (Próximos 7 días)</h2>
+          <h2 className="text-lg font-semibold font-admin-display">Próximos Retiros (Próximos 7 días)</h2>
         </div>
         
         {(!upcomingReservations || upcomingReservations.length === 0) ? (

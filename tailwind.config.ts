@@ -22,6 +22,15 @@ const config = {
         display: ["var(--font-display)", "serif"],
         body: ["var(--font-body)", "sans-serif"],
         sans: ["var(--font-body)", "sans-serif"],
+        /** Solo panel /admin (variables definidas en admin/layout.tsx) */
+        admin: ["var(--font-admin)", "ui-sans-serif", "system-ui", "sans-serif"],
+        "admin-display": [
+          "var(--font-admin-display)",
+          "var(--font-admin)",
+          "ui-sans-serif",
+          "system-ui",
+          "sans-serif",
+        ],
       },
       colors: {
         border: "hsl(var(--border))",
