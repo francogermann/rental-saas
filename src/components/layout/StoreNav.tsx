@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import { CartNavButton } from '@/components/cart/CartNavButton';
 import { SocialIconLinks } from '@/components/layout/SocialIconLinks';
@@ -11,6 +12,8 @@ type StoreNavProps = {
 };
 
 export function StoreNav({ accountLink }: StoreNavProps) {
+  const pathname = usePathname();
+  const isAdmin = pathname.startsWith('/admin');
   const [menuOpen, setMenuOpen] = useState(false);
 
   const closeMenu = () => setMenuOpen(false);
@@ -30,7 +33,7 @@ export function StoreNav({ accountLink }: StoreNavProps) {
             >
               Colección
             </a>
-            <SocialIconLinks size="sm" iconClassName="h-4 w-4" />
+            {!isAdmin ? <SocialIconLinks size="sm" iconClassName="h-4 w-4" /> : null}
             {accountLink}
             <CartNavButton />
           </div>
@@ -76,9 +79,11 @@ export function StoreNav({ accountLink }: StoreNavProps) {
               >
                 Colección
               </Link>
-              <div className="px-4 py-2" onClick={closeMenu}>
-                <SocialIconLinks size="sm" />
-              </div>
+              {!isAdmin ? (
+                <div className="px-4 py-2" onClick={closeMenu}>
+                  <SocialIconLinks size="sm" />
+                </div>
+              ) : null}
               <div onClick={closeMenu} className="px-4 py-3">
                 {accountLink}
               </div>
