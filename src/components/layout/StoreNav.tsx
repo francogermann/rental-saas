@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 import { CartNavButton } from '@/components/cart/CartNavButton';
-import { SITE_LINKS } from '@/lib/site-links';
+import { SocialIconLinks } from '@/components/layout/SocialIconLinks';
 
 type StoreNavProps = {
   accountLink: React.ReactNode;
@@ -30,14 +30,7 @@ export function StoreNav({ accountLink }: StoreNavProps) {
             >
               Colección
             </a>
-            <a
-              href={SITE_LINKS.instagram}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm font-medium text-muted-foreground hover:text-fuchsia-400 transition-colors"
-            >
-              Instagram
-            </a>
+            <SocialIconLinks size="sm" iconClassName="h-4 w-4" />
             {accountLink}
             <CartNavButton />
           </div>
@@ -83,15 +76,9 @@ export function StoreNav({ accountLink }: StoreNavProps) {
               >
                 Colección
               </Link>
-              <a
-                href={SITE_LINKS.instagram}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={closeMenu}
-                className="px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:bg-white/5 hover:text-fuchsia-400 transition-colors"
-              >
-                Instagram
-              </a>
+              <div className="px-4 py-2" onClick={closeMenu}>
+                <SocialIconLinks size="sm" />
+              </div>
               <div onClick={closeMenu} className="px-4 py-3">
                 {accountLink}
               </div>
