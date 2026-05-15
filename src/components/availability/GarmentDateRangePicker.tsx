@@ -182,7 +182,7 @@ export function GarmentDateRangePicker({
                 showOutsideDays={false}
             />
 
-            <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+            <div className="flex flex-col gap-2 text-xs text-muted-foreground sm:flex-row sm:flex-wrap sm:gap-4">
                 <span className="flex items-center gap-1.5">
                     <span className="inline-block w-3 h-3 rounded-full bg-primary" />
                     Seleccionado

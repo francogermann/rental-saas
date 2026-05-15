@@ -41,9 +41,9 @@ export default function ClientDateSelector({
       
       {selectedRange && (
         <div className="mt-4 pt-6 border-t border-white/10">
-           <div className="flex justify-between items-center mb-6">
-              <span className="text-sm font-medium text-muted-foreground uppercase tracking-widest">A abonar hoy:</span>
-              <span className="font-extrabold text-2xl bg-gradient-to-r from-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
+           <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground sm:text-sm">A abonar hoy:</span>
+              <span className="font-extrabold text-xl bg-gradient-to-r from-fuchsia-400 to-purple-400 bg-clip-text text-transparent sm:text-2xl">
                 {formatUy((garment.rental_price || 0) + (garment.deposit_amount || 0))}
               </span>
            </div>

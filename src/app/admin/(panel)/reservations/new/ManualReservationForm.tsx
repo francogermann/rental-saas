@@ -48,27 +48,47 @@ export function ManualReservationForm({
   const [state, formAction] = useFormState(createManualReservation, initialState);
   const [customerMode, setCustomerMode] = useState<'registered' | 'walk_in'>('registered');
   const [garmentId, setGarmentId] = useState('');
-  const [customerSearch, setCustomerSearch] = useState('');
-  const [garmentSearch, setGarmentSearch] = useState('');
+  const [customerSearchInput, setCustomerSearchInput] = useState('');
+  const [appliedCustomerSearch, setAppliedCustomerSearch] = useState('');
+  const [garmentSearchInput, setGarmentSearchInput] = useState('');
+  const [appliedGarmentSearch, setAppliedGarmentSearch] = useState('');
 
   const selected = useMemo(() => garments.find((g) => g.id === garmentId), [garments, garmentId]);
 
   const filteredCustomers = useMemo(() => {
-    const q = customerSearch.trim().toLowerCase();
+    const q = appliedCustomerSearch.trim().toLowerCase();
     if (!q) return customers;
     return customers.filter((c) => {
       const haystack = `${c.first_name} ${c.last_name} ${c.email}`.toLowerCase();
       return haystack.includes(q);
     });
-  }, [customers, customerSearch]);
+  }, [customers, appliedCustomerSearch]);
 
   const filteredGarments = useMemo(() => {
-    const q = garmentSearch.trim().toLowerCase();
+    const q = appliedGarmentSearch.trim().toLowerCase();
     if (!q) return garments;
     return garments.filter(
       (g) => g.name.toLowerCase().includes(q) || g.sku.toLowerCase().includes(q),
     );
-  }, [garments, garmentSearch]);
+  }, [garments, appliedGarmentSearch]);
+
+  function applyCustomerSearch() {
+    setAppliedCustomerSearch(customerSearchInput);
+  }
+
+  function applyGarmentSearch() {
+    setAppliedGarmentSearch(garmentSearchInput);
+  }
+
+  function clearCustomerSearch() {
+    setCustomerSearchInput('');
+    setAppliedCustomerSearch('');
+  }
+
+  function clearGarmentSearch() {
+    setGarmentSearchInput('');
+    setAppliedGarmentSearch('');
+  }
 
   return (
     <form action={formAction} className="space-y-8 max-w-3xl">
@@ -117,18 +137,31 @@ export function ManualReservationForm({
               <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                 Buscar clienta
               </label>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <input
                   type="search"
-                  value={customerSearch}
-                  onChange={(e) => setCustomerSearch(e.target.value)}
+                  value={customerSearchInput}
+                  onChange={(e) => setCustomerSearchInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      applyCustomerSearch();
+                    }
+                  }}
                   placeholder="Nombre o email"
                   className="min-w-0 flex-1 rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm"
                 />
-                {customerSearch ? (
+                <button
+                  type="button"
+                  onClick={applyCustomerSearch}
+                  className="shrink-0 rounded-lg border border-fuchsia-500/40 bg-fuchsia-500/15 px-4 py-2 text-sm font-medium text-fuchsia-100 hover:bg-fuchsia-500/25"
+                >
+                  Buscar
+                </button>
+                {customerSearchInput || appliedCustomerSearch ? (
                   <button
                     type="button"
-                    onClick={() => setCustomerSearch('')}
+                    onClick={clearCustomerSearch}
                     className="shrink-0 rounded-lg border border-white/10 px-3 py-2 text-xs text-muted-foreground hover:bg-white/[0.06] hover:text-foreground"
                   >
                     Limpiar
@@ -140,9 +173,13 @@ export function ManualReservationForm({
               <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                 Elegí de la lista
               </label>
-              {filteredCustomers.length === 0 ? (
+              {appliedCustomerSearch && filteredCustomers.length === 0 ? (
                 <p className="rounded-lg border border-white/10 bg-black/20 px-3 py-4 text-sm text-muted-foreground">
                   No hay clientas que coincidan. Probá otra búsqueda.
+                </p>
+              ) : filteredCustomers.length === 0 ? (
+                <p className="rounded-lg border border-white/10 bg-black/20 px-3 py-4 text-sm text-muted-foreground">
+                  No hay clientas cargadas.
                 </p>
               ) : (
                 <select
@@ -213,18 +250,31 @@ export function ManualReservationForm({
           <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             Buscar prenda
           </label>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <input
               type="search"
-              value={garmentSearch}
-              onChange={(e) => setGarmentSearch(e.target.value)}
+              value={garmentSearchInput}
+              onChange={(e) => setGarmentSearchInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  applyGarmentSearch();
+                }
+              }}
               placeholder="Nombre o SKU"
               className="min-w-0 flex-1 rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm"
             />
-            {garmentSearch ? (
+            <button
+              type="button"
+              onClick={applyGarmentSearch}
+              className="shrink-0 rounded-lg border border-fuchsia-500/40 bg-fuchsia-500/15 px-4 py-2 text-sm font-medium text-fuchsia-100 hover:bg-fuchsia-500/25"
+            >
+              Buscar
+            </button>
+            {garmentSearchInput || appliedGarmentSearch ? (
               <button
                 type="button"
-                onClick={() => setGarmentSearch('')}
+                onClick={clearGarmentSearch}
                 className="shrink-0 rounded-lg border border-white/10 px-3 py-2 text-xs text-muted-foreground hover:bg-white/[0.06] hover:text-foreground"
               >
                 Limpiar
@@ -233,9 +283,13 @@ export function ManualReservationForm({
           </div>
         </div>
         <div className="max-h-[min(24rem,50vh)] overflow-y-auto rounded-xl border border-white/10 bg-black/20">
-          {filteredGarments.length === 0 ? (
+          {appliedGarmentSearch && filteredGarments.length === 0 ? (
             <div className="p-8 text-center text-sm text-muted-foreground">
-              No hay prendas que coincidan. Probá otra búsqueda o actualizá el listado de sede arriba.
+              No hay prendas que coincidan. Probá otra búsqueda o cambiá la sede del inventario arriba.
+            </div>
+          ) : filteredGarments.length === 0 ? (
+            <div className="p-8 text-center text-sm text-muted-foreground">
+              No hay prendas disponibles en este inventario.
             </div>
           ) : (
             <ul className="divide-y divide-white/5">

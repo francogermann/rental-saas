@@ -33,7 +33,7 @@ export function ShoeRecommendationsRail({ pickupDate, returnDate }: ShoeRecommen
 
   return (
     <section
-      className="mt-16 border-t border-white/10 pt-12"
+      className="mt-10 border-t border-white/10 pt-8 sm:mt-16 sm:pt-12"
       aria-label="Zapatos sugeridos para combinar con tu vestido"
     >
       <h2 className="font-display text-xl font-bold tracking-tight text-foreground md:text-2xl">

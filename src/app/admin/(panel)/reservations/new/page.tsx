@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { z } from 'zod';
 import { createAdminClient } from '@/lib/supabase/server';
+import { GarmentInventoryFilter } from './GarmentInventoryFilter';
 import { ManualReservationForm } from './ManualReservationForm';
 import { requireAdminPagePermission } from '@/lib/admin-auth-server';
 
@@ -134,43 +135,7 @@ export default async function AdminNewReservationPage({
         </Link>
       </div>
 
-      <form method="GET" className="flex flex-col gap-4 rounded-2xl border border-white/5 bg-white/[0.02] p-4 sm:flex-row sm:flex-wrap sm:items-end">
-        <div className="w-full min-w-[200px] space-y-1 sm:max-w-xs">
-          <label className="text-[10px] uppercase tracking-widest text-muted-foreground">Inventario listado</label>
-          <select
-            name="garment_scope"
-            defaultValue={scopeAll ? 'all' : ''}
-            className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm"
-          >
-            <option value="">Solo sede seleccionada</option>
-            <option value="all">Todas las sedes</option>
-          </select>
-        </div>
-
-        {!scopeAll ? (
-          <div className="w-full min-w-[200px] space-y-1 sm:max-w-xs">
-            <label className="text-[10px] uppercase tracking-widest text-muted-foreground">Sede (prendas)</label>
-            <select
-              name="garment_location_id"
-              defaultValue={garmentLocId}
-              className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm"
-            >
-              {locations.map((loc) => (
-                <option key={loc.id} value={loc.id}>
-                  {loc.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        ) : null}
-
-        <button
-          type="submit"
-          className="rounded-lg border border-white/10 bg-white/[0.06] px-4 py-2 text-sm font-medium hover:bg-white/[0.1]"
-        >
-          Actualizar listado
-        </button>
-      </form>
+      <GarmentInventoryFilter scopeAll={scopeAll} garmentLocId={garmentLocId} locations={locations} />
 
       {scopeAll ? (
         <p className="text-xs text-amber-200/90 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2">
@@ -189,8 +154,8 @@ export default async function AdminNewReservationPage({
       />
 
       <p className="text-xs text-muted-foreground">
-        Arriba elegís sede e inventario del listado (hasta 500 prendas y 200 clientas). En cada sección del formulario
-        podés buscar en vivo por nombre, email o SKU.
+        Arriba elegís sede e inventario del listado (se actualiza al cambiar). En Clienta y Prenda usá Buscar para
+        filtrar por nombre, email o SKU (hasta 200 clientas y 500 prendas cargadas).
       </p>
     </div>
   );

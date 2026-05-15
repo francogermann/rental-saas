@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { listCatalogGarments, searchAvailableGarments } from '@/lib/actions/availability';
 import { toLocalYmdString } from '@/lib/calendar-date';
@@ -54,19 +53,10 @@ export default async function CatalogPage({
   const availableOnly = parseAvailableOnly(searchParams);
 
   const rawLoc = typeof searchParams.pickupLocationId === 'string' ? searchParams.pickupLocationId.trim() : '';
-  const defaultLocId = locations[0].id;
-
-  if (!z.string().uuid().safeParse(rawLoc).success || !locations.some((l) => l.id === rawLoc)) {
-    const qs = new URLSearchParams({
-      pickupLocationId: defaultLocId,
-      pickupDate,
-      returnDate,
-    });
-    if (availableOnly) qs.set('availableOnly', '1');
-    redirect(`/catalog?${qs.toString()}`);
-  }
-
-  const pickupLocationId = rawLoc;
+  const pickupLocationId =
+    rawLoc && z.string().uuid().safeParse(rawLoc).success && locations.some((l) => l.id === rawLoc)
+      ? rawLoc
+      : undefined;
 
   const { data: catRows } = await admin
     .from('garments')
@@ -105,7 +95,7 @@ export default async function CatalogPage({
     maxPriceRaw !== undefined && !Number.isNaN(maxPriceParsed) && maxPriceParsed > 0 ? maxPriceParsed : undefined;
 
   const listParams = {
-    pickupLocationId,
+    ...(pickupLocationId ? { pickupLocationId } : {}),
     category,
     sizeLabel,
     maxPrice,

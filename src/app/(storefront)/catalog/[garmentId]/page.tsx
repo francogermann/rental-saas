@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { createAdminClient, createServerClient } from '@/lib/supabase/server';
 import { notFound, redirect } from 'next/navigation';
 import { z } from 'zod';
@@ -223,10 +224,17 @@ export default async function GarmentDetailPage({
     <div className="min-h-screen">
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_30%_20%,hsl(315_100%_60%/.08),transparent_50%)]" />
 
-      <div className="relative z-10 container mx-auto max-w-7xl px-6 py-24">
-        <div className="grid items-start gap-12 md:grid-cols-2 lg:gap-16">
-          <div className="flex flex-col gap-4 md:sticky md:top-24">
-            <div className="relative aspect-[3/4] overflow-hidden rounded-3xl border border-white/10 bg-muted shadow-2xl">
+      <div className="relative z-10 container mx-auto max-w-7xl px-4 sm:px-6 py-16 sm:py-20 lg:py-24">
+        <Link
+          href={`/catalog?pickupLocationId=${encodeURIComponent(pickupLocationId)}&pickupDate=${encodeURIComponent(pickupDate)}&returnDate=${encodeURIComponent(returnDate)}`}
+          className="mb-6 inline-flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-fuchsia-300"
+        >
+          ← Volver al catálogo
+        </Link>
+
+        <div className="grid items-start gap-8 md:grid-cols-2 md:gap-12 lg:gap-16">
+          <div className="flex flex-col gap-4 md:sticky md:top-24 md:self-start">
+            <div className="relative aspect-[3/4] overflow-hidden rounded-2xl border border-white/10 bg-muted shadow-2xl sm:rounded-3xl">
               {detailPhotoUrl ? (
                 <Image
                   src={detailPhotoUrl}
@@ -251,7 +259,7 @@ export default async function GarmentDetailPage({
                 />
               </div>
 
-              <div className="absolute left-4 top-4 flex flex-wrap gap-2 pr-14">
+              <div className="absolute left-3 top-3 flex max-w-[calc(100%-3.5rem)] flex-wrap gap-1.5 sm:left-4 sm:top-4 sm:gap-2 sm:pr-14">
                 {garment.category && (
                   <Badge className="border-white/10 bg-black/50 text-white/90 backdrop-blur-md" variant="secondary">
                     {garment.category}
@@ -269,14 +277,14 @@ export default async function GarmentDetailPage({
             </div>
           </div>
 
-          <div className="flex flex-col space-y-8">
+          <div className="flex min-w-0 flex-col space-y-6 sm:space-y-8">
             <div>
-              <h1 className="mb-4 font-display text-3xl font-bold tracking-tight md:text-5xl">{garment.name}</h1>
-              <p className="text-lg leading-relaxed text-muted-foreground">
+              <h1 className="mb-3 font-display text-2xl font-bold tracking-tight sm:mb-4 sm:text-3xl md:text-5xl">{garment.name}</h1>
+              <p className="text-base leading-relaxed text-muted-foreground sm:text-lg">
                 {garment.description || 'Vestido exclusivo de Carpe Diem. Elegí tus fechas y reservalo sin agenda previa.'}
               </p>
               {sedeLine?.name && (
-                <p className="mt-3 text-sm text-fuchsia-300/90">
+                <p className="mt-3 break-words text-sm text-fuchsia-300/90">
                   <span className="font-medium text-fuchsia-200/90">Sede de retiro: </span>
                   {sedeLine.name}
                   <span className="font-normal text-muted-foreground"> — {sedeLine.address_line}</span>
@@ -284,17 +292,17 @@ export default async function GarmentDetailPage({
               )}
             </div>
 
-            <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 shadow-2xl backdrop-blur-xl">
-              <div className="flex items-end justify-between">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl backdrop-blur-xl sm:rounded-3xl sm:p-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
                 <div>
-                  <p className="mb-1 text-sm font-medium uppercase tracking-widest text-muted-foreground">Valor de Alquiler</p>
-                  <p className="text-3xl font-bold bg-gradient-to-r from-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
+                  <p className="mb-1 text-xs font-medium uppercase tracking-widest text-muted-foreground sm:text-sm">Valor de Alquiler</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-fuchsia-400 to-purple-400 bg-clip-text text-transparent sm:text-3xl">
                     {formatUy(garment.rental_price)}
                   </p>
                 </div>
-                <div className="text-right">
-                  <p className="mb-1 text-sm uppercase tracking-widest text-muted-foreground">Garantía / Seña</p>
-                  <p className="text-xl text-muted-foreground">{formatUy(garment.deposit_amount)}</p>
+                <div className="sm:text-right">
+                  <p className="mb-1 text-xs uppercase tracking-widest text-muted-foreground sm:text-sm">Garantía / Seña</p>
+                  <p className="text-lg text-muted-foreground sm:text-xl">{formatUy(garment.deposit_amount)}</p>
                 </div>
               </div>
             </div>

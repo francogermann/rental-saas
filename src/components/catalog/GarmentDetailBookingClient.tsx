@@ -31,8 +31,8 @@ export function GarmentDetailBookingClient({
 
   return (
     <>
-      <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-8 shadow-2xl backdrop-blur-xl">
-        <h3 className="mb-6 font-display text-lg font-semibold tracking-tight">Seleccionar Fechas</h3>
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl backdrop-blur-xl sm:rounded-3xl sm:p-6 md:p-8">
+        <h3 className="mb-4 font-display text-base font-semibold tracking-tight sm:mb-6 sm:text-lg">Seleccionar Fechas</h3>
         <ClientDateSelector
           garment={garment}
           pickupLocationId={pickupLocationId}

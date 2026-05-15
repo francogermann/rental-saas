@@ -16,9 +16,9 @@ export function SimilarGarments({ items, pickupLocationId, pickupDate, returnDat
   if (items.length === 0) return null;
 
   return (
-    <section className="mt-20 border-t border-white/10 pt-16">
-      <h2 className="font-display text-2xl font-bold tracking-tight mb-8">Similares</h2>
-      <p className="text-sm text-muted-foreground mb-8 max-w-2xl">
+    <section className="mt-12 border-t border-white/10 pt-10 sm:mt-20 sm:pt-16">
+      <h2 className="mb-4 font-display text-xl font-bold tracking-tight sm:mb-8 sm:text-2xl">Similares</h2>
+      <p className="mb-6 max-w-2xl text-sm text-muted-foreground sm:mb-8">
         Misma categoría y talle. La disponibilidad puede variar según las fechas que elijas.
       </p>
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">

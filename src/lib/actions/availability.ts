@@ -27,7 +27,7 @@ const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha inv
 const AvailabilitySearchSchema = z.object({
     pickupDate: dateSchema,
     returnDate: dateSchema,
-    pickupLocationId: z.string().uuid('Elegí una sede de retiro válida.'),
+    pickupLocationId: z.string().uuid('Elegí una sede de retiro válida.').optional(),
     sizeLabel: z.string().min(1).max(10).optional(),
     chestCm: z.number().int().min(60).max(160).optional(),
     waistCm: z.number().int().min(40).max(140).optional(),
@@ -50,7 +50,7 @@ const BlockedDatesSchema = z.object({
 });
 
 const CatalogListSchema = z.object({
-    pickupLocationId: z.string().uuid('Elegí una sede de retiro válida.'),
+    pickupLocationId: z.string().uuid('Elegí una sede de retiro válida.').optional(),
     sizeLabel: z.string().min(1).max(10).optional(),
     category: z.string().min(1).max(100).optional(),
     maxPrice: z.number().positive().optional(),
@@ -105,15 +105,17 @@ export async function searchAvailableGarments(
         return { data: null, error: 'Tienda inactiva o no encontrada.' };
     }
 
-    const { data: locOk } = await adminSupabase
-        .from('locations')
-        .select('id')
-        .eq('id', pickupLocationId)
-        .eq('organization_id', orgData.id)
-        .maybeSingle();
+    if (pickupLocationId) {
+        const { data: locOk } = await adminSupabase
+            .from('locations')
+            .select('id')
+            .eq('id', pickupLocationId)
+            .eq('organization_id', orgData.id)
+            .maybeSingle();
 
-    if (!locOk) {
-        return { data: null, error: 'La sede de retiro no es válida para esta tienda.' };
+        if (!locOk) {
+            return { data: null, error: 'La sede de retiro no es válida para esta tienda.' };
+        }
     }
 
     const { data, error } = await supabase.rpc('get_available_garments', {
@@ -127,7 +129,7 @@ export async function searchAvailableGarments(
         p_limit: limit,
         p_offset: offset,
         p_organization_id: orgData.id,
-        p_pickup_location_id: pickupLocationId,
+        p_pickup_location_id: pickupLocationId ?? undefined,
     });
 
     if (error) {
@@ -207,15 +209,17 @@ export async function listCatalogGarments(
         return { data: null, error: 'Tienda inactiva o no encontrada.' };
     }
 
-    const { data: locOk } = await admin
-        .from('locations')
-        .select('id')
-        .eq('id', pickupLocationId)
-        .eq('organization_id', orgData.id)
-        .maybeSingle();
+    if (pickupLocationId) {
+        const { data: locOk } = await admin
+            .from('locations')
+            .select('id')
+            .eq('id', pickupLocationId)
+            .eq('organization_id', orgData.id)
+            .maybeSingle();
 
-    if (!locOk) {
-        return { data: null, error: 'La sede de retiro no es válida para esta tienda.' };
+        if (!locOk) {
+            return { data: null, error: 'La sede de retiro no es válida para esta tienda.' };
+        }
     }
 
     let query = admin
@@ -229,8 +233,11 @@ export async function listCatalogGarments(
         )
         .eq('organization_id', orgData.id)
         .is('deleted_at', null)
-        .eq('operative_status', 'available')
-        .or(`location_id.eq.${pickupLocationId},location_id.is.null`);
+        .eq('operative_status', 'available');
+
+    if (pickupLocationId) {
+        query = query.or(`location_id.eq.${pickupLocationId},location_id.is.null`);
+    }
 
     if (sizeLabel) query = query.eq('size_label', sizeLabel);
     if (category) query = query.eq('category', category);

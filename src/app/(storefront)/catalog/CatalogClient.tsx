@@ -9,9 +9,11 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useCart } from '@/components/cart/CartContext';
 import { formatUy } from '@/lib/utils';
 import { FavoriteHeart } from '@/components/catalog/FavoriteHeart';
+import { CatalogFilterChip, CatalogFilterSection } from '@/components/catalog/CatalogFilterSection';
 import { listCatalogGarments, searchAvailableGarments } from '@/lib/actions/availability';
+import { resolvePickupLocationForGarment } from '@/lib/catalog-pickup-location';
 import { CATALOG_FETCH_SIZE, CATALOG_PAGE_SIZE } from '@/lib/catalog-pagination';
-import { pickCatalogCoverUrl } from '@/lib/photo-urls';
+import { primaryPhotoUrl } from '@/lib/photo-urls';
 
 import type { GarmentSummary } from '@/types/domain';
 
@@ -49,15 +51,71 @@ const COLORS = [
   { value: 'plateado', label: 'Plateado', hex: '#9ca3af' },
 ];
 
+function matchesClientFilters(
+  g: GarmentSummary,
+  filters: {
+    pickupLoc: string;
+    events: string[];
+    categories: string[];
+    sizes: string[];
+    colors: string[];
+  },
+): boolean {
+  if (filters.pickupLoc && g.location_id != null && g.location_id !== filters.pickupLoc) {
+    return false;
+  }
+
+  if (filters.events.length > 0) {
+    const tags = (g.tags || []).map((t) => t.toLowerCase());
+    const name = g.name.toLowerCase();
+    const matchesEvent = filters.events.some((ev) => {
+      if (ev === 'boda-dia' || ev === 'boda-noche')
+        return tags.includes('boda') || tags.includes('casamiento') || g.category?.toLowerCase() === 'casamiento';
+      if (ev === 'novia')
+        return tags.includes('novia') || tags.includes('casamiento') || g.category?.toLowerCase() === 'casamiento';
+      if (ev === 'fiesta-verano') return tags.includes('verano') || tags.includes('tropical') || tags.includes('floral');
+      if (ev === 'cocktail')
+        return tags.includes('cocktail') || tags.includes('fiesta') || g.category?.toLowerCase() === 'fiesta';
+      if (ev === 'gala') return tags.includes('gala') || tags.includes('formal') || g.category?.toLowerCase() === 'gala';
+      if (ev === 'xv') return tags.includes('xv') || tags.includes('quinceañera') || tags.includes('fiesta');
+      return tags.includes(ev) || name.includes(ev) || g.category?.toLowerCase().includes(ev);
+    });
+    if (!matchesEvent) return false;
+  }
+
+  if (filters.categories.length > 0) {
+    if (!filters.categories.some((c) => g.category === c)) return false;
+  }
+
+  if (filters.sizes.length > 0) {
+    const sizeMatch = filters.sizes.some((s) => {
+      if (s === 'Plus Size') return g.size_label === 'XL' || g.size_label === 'XXL' || g.size_label === 'Plus Size';
+      return g.size_label === s;
+    });
+    if (!sizeMatch) return false;
+  }
+
+  if (filters.colors.length > 0) {
+    const tags = (g.tags || []).map((t) => t.toLowerCase());
+    const name = g.name.toLowerCase();
+    if (!filters.colors.some((c) => tags.includes(c) || name.includes(c))) return false;
+  }
+
+  return true;
+}
+
+function chipCount(events: string[], categories: string[], sizes: string[], colors: string[]) {
+  return events.length + categories.length + sizes.length + colors.length;
+}
+
 interface CatalogClientProps {
   garments: GarmentSummary[];
-  /** True si el servidor recibió más de CATALOG_PAGE_SIZE filas (hay página siguiente). */
   initialHasMore: boolean;
   error: string | null;
   initialPickupDate: string;
   initialReturnDate: string;
   locations: CatalogLocationOption[];
-  pickupLocationId: string;
+  pickupLocationId?: string;
   initialCategory?: string;
   initialSize?: string;
   initialMaxPrice?: number;
@@ -89,18 +147,33 @@ export default function CatalogClient({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [pickupDate, setPickupDate] = useState(initialPickupDate);
-  const [returnDate, setReturnDate] = useState(initialReturnDate);
-  const [pickupLoc, setPickupLoc] = useState(pickupLocationId);
-  const [filterByAvailability, setFilterByAvailability] = useState(initialAvailableOnly);
+  const initialLoc = pickupLocationId ?? '';
 
-  const [selectedEvents, setSelectedEvents] = useState<string[]>([]);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(() =>
+  const [draftPickupDate, setDraftPickupDate] = useState(initialPickupDate);
+  const [draftReturnDate, setDraftReturnDate] = useState(initialReturnDate);
+  const [draftPickupLoc, setDraftPickupLoc] = useState(initialLoc);
+  const [draftFilterByAvailability, setDraftFilterByAvailability] = useState(initialAvailableOnly);
+  const [draftEvents, setDraftEvents] = useState<string[]>([]);
+  const [draftCategories, setDraftCategories] = useState<string[]>(() =>
     initialCategory ? [initialCategory] : [],
   );
-  const [selectedSizes, setSelectedSizes] = useState<string[]>(() => (initialSize ? [initialSize] : []));
-  const [maxPriceInput, setMaxPriceInput] = useState(initialMaxPrice != null ? String(initialMaxPrice) : '');
-  const [selectedColors, setSelectedColors] = useState<string[]>([]);
+  const [draftSizes, setDraftSizes] = useState<string[]>(() => (initialSize ? [initialSize] : []));
+  const [draftMaxPriceInput, setDraftMaxPriceInput] = useState(
+    initialMaxPrice != null ? String(initialMaxPrice) : '',
+  );
+  const [draftColors, setDraftColors] = useState<string[]>([]);
+
+  const [appliedPickupDate, setAppliedPickupDate] = useState(initialPickupDate);
+  const [appliedReturnDate, setAppliedReturnDate] = useState(initialReturnDate);
+  const [appliedPickupLoc, setAppliedPickupLoc] = useState(initialLoc);
+  const [appliedFilterByAvailability, setAppliedFilterByAvailability] = useState(initialAvailableOnly);
+  const [appliedEvents, setAppliedEvents] = useState<string[]>([]);
+  const [appliedCategories, setAppliedCategories] = useState<string[]>(() =>
+    initialCategory ? [initialCategory] : [],
+  );
+  const [appliedSizes, setAppliedSizes] = useState<string[]>(() => (initialSize ? [initialSize] : []));
+  const [appliedColors, setAppliedColors] = useState<string[]>([]);
+
   const [sortBy, setSortBy] = useState('recommended');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
@@ -116,13 +189,21 @@ export default function CatalogClient({
   }, [garments, initialHasMore]);
 
   useEffect(() => {
-    setPickupDate(initialPickupDate);
-    setReturnDate(initialReturnDate);
-    setPickupLoc(pickupLocationId);
-    setFilterByAvailability(initialAvailableOnly);
-    setSelectedCategories(initialCategory ? [initialCategory] : []);
-    setSelectedSizes(initialSize ? [initialSize] : []);
-    setMaxPriceInput(initialMaxPrice != null ? String(initialMaxPrice) : '');
+    const loc = pickupLocationId ?? '';
+    setAppliedPickupDate(initialPickupDate);
+    setAppliedReturnDate(initialReturnDate);
+    setAppliedPickupLoc(loc);
+    setAppliedFilterByAvailability(initialAvailableOnly);
+    setAppliedCategories(initialCategory ? [initialCategory] : []);
+    setAppliedSizes(initialSize ? [initialSize] : []);
+
+    setDraftPickupDate(initialPickupDate);
+    setDraftReturnDate(initialReturnDate);
+    setDraftPickupLoc(loc);
+    setDraftFilterByAvailability(initialAvailableOnly);
+    setDraftCategories(initialCategory ? [initialCategory] : []);
+    setDraftSizes(initialSize ? [initialSize] : []);
+    setDraftMaxPriceInput(initialMaxPrice != null ? String(initialMaxPrice) : '');
   }, [
     initialPickupDate,
     initialReturnDate,
@@ -135,24 +216,28 @@ export default function CatalogClient({
 
   const { addItem } = useCart();
 
+  const buildListParams = useCallback(
+    (offset: number) => ({
+      ...(appliedPickupLoc ? { pickupLocationId: appliedPickupLoc } : {}),
+      category: initialCategory,
+      sizeLabel: initialSize,
+      maxPrice: initialMaxPrice,
+      limit: CATALOG_FETCH_SIZE,
+      offset,
+    }),
+    [appliedPickupLoc, initialCategory, initialSize, initialMaxPrice],
+  );
+
   const handleLoadMore = useCallback(async () => {
     if (loadingMore || !hasMore) return;
     setLoadingMore(true);
     setLoadMoreError(null);
     try {
-      const offset = items.length;
-      const listParams = {
-        pickupLocationId: pickupLoc,
-        category: initialCategory,
-        sizeLabel: initialSize,
-        maxPrice: initialMaxPrice,
-        limit: CATALOG_FETCH_SIZE,
-        offset,
-      };
-      const res = filterByAvailability
+      const listParams = buildListParams(items.length);
+      const res = appliedFilterByAvailability
         ? await searchAvailableGarments({
-            pickupDate,
-            returnDate,
+            pickupDate: appliedPickupDate,
+            returnDate: appliedReturnDate,
             ...listParams,
           })
         : await listCatalogGarments(listParams);
@@ -182,92 +267,74 @@ export default function CatalogClient({
     loadingMore,
     hasMore,
     items.length,
-    pickupDate,
-    returnDate,
-    pickupLoc,
-    initialCategory,
-    initialSize,
-    initialMaxPrice,
-    filterByAvailability,
+    appliedPickupDate,
+    appliedReturnDate,
+    appliedFilterByAvailability,
+    buildListParams,
   ]);
 
   const toggleFilter = (arr: string[], val: string, setter: (v: string[]) => void) => {
     setter(arr.includes(val) ? arr.filter((v) => v !== val) : [...arr, val]);
   };
 
-  const pushCatalogUrl = () => {
+  const applyFilters = () => {
+    setAppliedEvents(draftEvents);
+    setAppliedCategories(draftCategories);
+    setAppliedSizes(draftSizes);
+    setAppliedColors(draftColors);
+    setAppliedPickupLoc(draftPickupLoc);
+    setAppliedPickupDate(draftPickupDate);
+    setAppliedReturnDate(draftReturnDate);
+    setAppliedFilterByAvailability(draftFilterByAvailability);
+
     const p = new URLSearchParams();
-    p.set('pickupLocationId', pickupLoc);
-    p.set('pickupDate', pickupDate);
-    p.set('returnDate', returnDate);
-    if (filterByAvailability) p.set('availableOnly', '1');
-    if (selectedCategories.length === 1) p.set('category', selectedCategories[0]);
-    if (selectedSizes.length === 1) p.set('size', selectedSizes[0]);
-    const mp = Number(maxPriceInput);
-    if (maxPriceInput.trim() && !Number.isNaN(mp) && mp > 0) p.set('maxPrice', String(Math.round(mp)));
+    p.set('pickupDate', draftPickupDate);
+    p.set('returnDate', draftReturnDate);
+    if (draftPickupLoc) p.set('pickupLocationId', draftPickupLoc);
+    if (draftFilterByAvailability) p.set('availableOnly', '1');
+    if (draftCategories.length === 1) p.set('category', draftCategories[0]);
+    if (draftSizes.length === 1) p.set('size', draftSizes[0]);
+    const mp = Number(draftMaxPriceInput);
+    if (draftMaxPriceInput.trim() && !Number.isNaN(mp) && mp > 0) p.set('maxPrice', String(Math.round(mp)));
+
     router.push(`${pathname}?${p.toString()}`);
+    setMobileFiltersOpen(false);
   };
 
   const clearAll = () => {
-    setSelectedEvents([]);
-    setSelectedCategories([]);
-    setSelectedSizes([]);
-    setSelectedColors([]);
-    setMaxPriceInput('');
+    setDraftEvents([]);
+    setDraftCategories([]);
+    setDraftSizes([]);
+    setDraftColors([]);
+    setDraftMaxPriceInput('');
+    setDraftPickupLoc('');
+    setAppliedEvents([]);
+    setAppliedCategories([]);
+    setAppliedSizes([]);
+    setAppliedColors([]);
+    setAppliedPickupLoc('');
+
     const p = new URLSearchParams();
-    p.set('pickupLocationId', pickupLoc);
-    p.set('pickupDate', pickupDate);
-    p.set('returnDate', returnDate);
-    if (filterByAvailability) p.set('availableOnly', '1');
+    p.set('pickupDate', appliedPickupDate);
+    p.set('returnDate', appliedReturnDate);
+    if (appliedFilterByAvailability) p.set('availableOnly', '1');
     router.push(`${pathname}?${p.toString()}`);
   };
 
-  const activeCount =
-    selectedEvents.length + selectedCategories.length + selectedSizes.length + selectedColors.length;
+  const draftChipCount = chipCount(draftEvents, draftCategories, draftSizes, draftColors);
+  const appliedChipCount = chipCount(appliedEvents, appliedCategories, appliedSizes, appliedColors);
 
   const filtered = useMemo(() => {
     if (!items.length) return [];
-    const filteredArray = items.filter((g) => {
-      if (selectedEvents.length > 0) {
-        const tags = (g.tags || []).map((t) => t.toLowerCase());
-        const name = g.name.toLowerCase();
-        const matchesEvent = selectedEvents.some((ev) => {
-          if (ev === 'boda-dia' || ev === 'boda-noche')
-            return tags.includes('boda') || tags.includes('casamiento') || g.category?.toLowerCase() === 'casamiento';
-          if (ev === 'novia')
-            return tags.includes('novia') || tags.includes('casamiento') || g.category?.toLowerCase() === 'casamiento';
-          if (ev === 'fiesta-verano') return tags.includes('verano') || tags.includes('tropical') || tags.includes('floral');
-          if (ev === 'cocktail')
-            return tags.includes('cocktail') || tags.includes('fiesta') || g.category?.toLowerCase() === 'fiesta';
-          if (ev === 'gala') return tags.includes('gala') || tags.includes('formal') || g.category?.toLowerCase() === 'gala';
-          if (ev === 'xv') return tags.includes('xv') || tags.includes('quinceañera') || tags.includes('fiesta');
-          return tags.includes(ev) || name.includes(ev) || g.category?.toLowerCase().includes(ev);
-        });
-        if (!matchesEvent) return false;
-      }
-
-      if (selectedCategories.length > 0) {
-        const matchesCat = selectedCategories.some((c) => g.category === c);
-        if (!matchesCat) return false;
-      }
-
-      if (selectedSizes.length > 0) {
-        const sizeMatch = selectedSizes.some((s) => {
-          if (s === 'Plus Size') return g.size_label === 'XL' || g.size_label === 'XXL' || g.size_label === 'Plus Size';
-          return g.size_label === s;
-        });
-        if (!sizeMatch) return false;
-      }
-
-      if (selectedColors.length > 0) {
-        const tags = (g.tags || []).map((t) => t.toLowerCase());
-        const name = g.name.toLowerCase();
-        const colorMatch = selectedColors.some((c) => tags.includes(c) || name.includes(c));
-        if (!colorMatch) return false;
-      }
-
-      return true;
-    });
+    const filteredArray = items.filter((g) =>
+      matchesClientFilters(g, {
+        pickupLoc: appliedPickupLoc,
+        events: appliedEvents,
+        categories: appliedCategories,
+        sizes: appliedSizes,
+        colors: appliedColors,
+      }),
+    );
 
     return filteredArray.sort((a, b) => {
       if (sortBy === 'price_asc') return (a.rental_price || 0) - (b.rental_price || 0);
@@ -276,98 +343,61 @@ export default function CatalogClient({
       if (sortBy === 'popular') return b.name.length - a.name.length;
       return 0;
     });
-  }, [items, selectedEvents, selectedCategories, selectedSizes, selectedColors, sortBy]);
+  }, [items, appliedPickupLoc, appliedEvents, appliedCategories, appliedSizes, appliedColors, sortBy]);
 
-  const catalogCoverByGarmentId = useMemo(() => {
-    const used = new Set<string>();
-    const m = new Map<string, string | null>();
-    for (const g of filtered) {
-      m.set(g.id, pickCatalogCoverUrl(g.photos_urls, used));
-    }
-    return m;
-  }, [filtered]);
-
-  const FilterSection = ({
-    title,
-    count,
-    children,
-  }: {
-    title: string;
-    count: number;
-    children: React.ReactNode;
-  }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    return (
-      <div className="border-b border-white/5 last:border-0">
-        <button type="button" onClick={() => setIsOpen(!isOpen)} className="flex w-full cursor-pointer items-center justify-between py-3">
-          <span className="text-xs font-semibold uppercase tracking-widest text-fuchsia-400">{title}</span>
-          <div className="flex items-center gap-2">
-            {count > 0 && (
-              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-fuchsia-500 text-[9px] font-bold text-white">
-                {count}
-              </span>
-            )}
-            <span className={`text-xs text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
-              ▾
-            </span>
-          </div>
-        </button>
-        {isOpen && <div className="pb-4 pt-1">{children}</div>}
-      </div>
-    );
-  };
-
-  const FilterChip = ({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) => (
+  const applyFiltersFooter = (
     <button
       type="button"
-      onClick={onClick}
-      className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
-        active
-          ? 'border-fuchsia-500/50 bg-fuchsia-500/20 text-fuchsia-300'
-          : 'border-white/10 bg-white/[0.02] text-muted-foreground hover:border-white/20 hover:text-foreground'
-      }`}
+      onClick={applyFilters}
+      disabled={draftPickupDate > draftReturnDate}
+      className="mt-4 w-full rounded-lg bg-fuchsia-600 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition-colors hover:bg-fuchsia-500 disabled:opacity-50 disabled:hover:bg-fuchsia-600"
     >
-      {label}
+      Aplicar filtros
     </button>
   );
 
   const filtersContent = (
     <>
-      <FilterSection title="Fechas y sede" count={0}>
+      <CatalogFilterSection title="Fechas y sede" count={0} defaultOpen>
         <div className="flex flex-col gap-3">
           <div>
             <label className="mb-1 block text-[10px] font-semibold uppercase text-muted-foreground">Sede de retiro</label>
             <select
-              value={pickupLoc}
-              onChange={(e) => setPickupLoc(e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-fuchsia-500/50 focus:outline-none"
+              value={draftPickupLoc}
+              onChange={(e) => setDraftPickupLoc(e.target.value)}
+              className="w-full cursor-pointer rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-foreground outline-none focus:border-fuchsia-500/50 focus:outline-none"
             >
+              <option value="" className="bg-background text-foreground">
+                Todas las sedes
+              </option>
               {locations.map((loc) => (
-                <option key={loc.id} value={loc.id}>
+                <option key={loc.id} value={loc.id} className="bg-background text-foreground">
                   {loc.name}
                 </option>
               ))}
             </select>
             <p className="mt-1 line-clamp-2 text-[10px] text-muted-foreground">
-              {locations.find((l) => l.id === pickupLoc)?.address_line}
+              {draftPickupLoc
+                ? locations.find((l) => l.id === draftPickupLoc)?.address_line
+                : 'Mostrando vestidos de todos los locales'}
             </p>
           </div>
           <div>
             <label className="mb-1 block text-[10px] font-semibold uppercase text-muted-foreground">Retiro</label>
             <input
               type="date"
-              value={pickupDate}
-              onChange={(e) => setPickupDate(e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-fuchsia-500/50 focus:outline-none"
+              value={draftPickupDate}
+              onChange={(e) => setDraftPickupDate(e.target.value)}
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-foreground focus:border-fuchsia-500/50 focus:outline-none"
             />
           </div>
           <div>
             <label className="mb-1 block text-[10px] font-semibold uppercase text-muted-foreground">Devolución</label>
             <input
               type="date"
-              value={returnDate}
-              onChange={(e) => setReturnDate(e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-fuchsia-500/50 focus:outline-none"
+              value={draftReturnDate}
+              onChange={(e) => setDraftReturnDate(e.target.value)}
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-foreground focus:border-fuchsia-500/50 focus:outline-none"
             />
           </div>
           <div>
@@ -377,9 +407,9 @@ export default function CatalogClient({
               min={0}
               step={50}
               placeholder="Sin tope"
-              value={maxPriceInput}
-              onChange={(e) => setMaxPriceInput(e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:border-fuchsia-500/50 focus:outline-none"
+              value={draftMaxPriceInput}
+              onChange={(e) => setDraftMaxPriceInput(e.target.value)}
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-foreground focus:border-fuchsia-500/50 focus:outline-none"
             />
             <p className="mt-1 text-[10px] text-muted-foreground">
               Un valor por vez en el servidor; podés refinar más con los chips de abajo.
@@ -388,8 +418,8 @@ export default function CatalogClient({
           <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2.5">
             <input
               type="checkbox"
-              checked={filterByAvailability}
-              onChange={(e) => setFilterByAvailability(e.target.checked)}
+              checked={draftFilterByAvailability}
+              onChange={(e) => setDraftFilterByAvailability(e.target.checked)}
               className="mt-0.5 h-4 w-4 rounded border-white/20 bg-white/5 text-fuchsia-600 focus:ring-fuchsia-500/50"
             />
             <span className="text-xs leading-snug text-muted-foreground">
@@ -399,66 +429,58 @@ export default function CatalogClient({
               </span>
             </span>
           </label>
-          <button
-            type="button"
-            onClick={pushCatalogUrl}
-            disabled={pickupDate > returnDate}
-            className="mt-1 w-full rounded-lg bg-fuchsia-600 py-2 text-xs font-bold uppercase tracking-wider text-white transition-colors hover:bg-fuchsia-500 disabled:opacity-50 disabled:hover:bg-fuchsia-600"
-          >
-            Aplicar fechas, sede y filtros
-          </button>
         </div>
-      </FilterSection>
+      </CatalogFilterSection>
 
-      <FilterSection title="Evento" count={selectedEvents.length}>
+      <CatalogFilterSection title="Evento" count={draftEvents.length}>
         <div className="flex flex-wrap gap-2">
           {EVENT_TYPES.map((e) => (
-            <FilterChip
+            <CatalogFilterChip
               key={e.value}
               label={e.label}
-              active={selectedEvents.includes(e.value)}
-              onClick={() => toggleFilter(selectedEvents, e.value, setSelectedEvents)}
+              active={draftEvents.includes(e.value)}
+              onClick={() => toggleFilter(draftEvents, e.value, setDraftEvents)}
             />
           ))}
         </div>
-      </FilterSection>
+      </CatalogFilterSection>
 
-      <FilterSection title="Categoría" count={selectedCategories.length}>
+      <CatalogFilterSection title="Categoría" count={draftCategories.length}>
         <div className="flex flex-wrap gap-2">
           {categoryOptions.map((c) => (
-            <FilterChip
+            <CatalogFilterChip
               key={c.value}
               label={c.label}
-              active={selectedCategories.includes(c.value)}
-              onClick={() => toggleFilter(selectedCategories, c.value, setSelectedCategories)}
+              active={draftCategories.includes(c.value)}
+              onClick={() => toggleFilter(draftCategories, c.value, setDraftCategories)}
             />
           ))}
         </div>
-      </FilterSection>
+      </CatalogFilterSection>
 
-      <FilterSection title="Talle" count={selectedSizes.length}>
+      <CatalogFilterSection title="Talle" count={draftSizes.length}>
         <div className="flex flex-wrap gap-2">
           {sizeOptions.map((s) => (
-            <FilterChip
+            <CatalogFilterChip
               key={s}
               label={s}
-              active={selectedSizes.includes(s)}
-              onClick={() => toggleFilter(selectedSizes, s, setSelectedSizes)}
+              active={draftSizes.includes(s)}
+              onClick={() => toggleFilter(draftSizes, s, setDraftSizes)}
             />
           ))}
         </div>
-      </FilterSection>
+      </CatalogFilterSection>
 
-      <FilterSection title="Color (tags)" count={selectedColors.length}>
+      <CatalogFilterSection title="Color (tags)" count={draftColors.length}>
         <p className="mb-2 text-[10px] text-muted-foreground">Se cruza con etiquetas y nombre; no hay columna de color en la base.</p>
         <div className="flex flex-wrap gap-2">
           {COLORS.map((c) => (
             <button
               key={c.value}
               type="button"
-              onClick={() => toggleFilter(selectedColors, c.value, setSelectedColors)}
+              onClick={() => toggleFilter(draftColors, c.value, setDraftColors)}
               className={`group flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
-                selectedColors.includes(c.value)
+                draftColors.includes(c.value)
                   ? 'border-fuchsia-500/50 bg-fuchsia-500/20 text-fuchsia-300'
                   : 'border-white/10 bg-white/[0.02] text-muted-foreground hover:border-white/20 hover:text-foreground'
               }`}
@@ -469,7 +491,9 @@ export default function CatalogClient({
             </button>
           ))}
         </div>
-      </FilterSection>
+      </CatalogFilterSection>
+
+      {applyFiltersFooter}
     </>
   );
 
@@ -483,20 +507,22 @@ export default function CatalogClient({
             className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium transition-colors hover:bg-white/10 lg:hidden"
           >
             <span>☰</span> Filtros
-            {activeCount > 0 && (
+            {draftChipCount > 0 && (
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-fuchsia-500 text-[10px] font-bold text-white">
-                {activeCount}
+                {draftChipCount}
               </span>
             )}
           </button>
           <p className="hidden text-sm text-muted-foreground sm:block">
-            {filterByAvailability
+            {appliedFilterByAvailability
               ? 'Filtrado por disponibilidad en las fechas elegidas'
-              : 'Toda la colección publicable'}
+              : appliedPickupLoc
+                ? 'Colección en la sede seleccionada'
+                : 'Toda la colección en todas las sedes'}
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {activeCount > 0 && (
+          {appliedChipCount > 0 && (
             <button type="button" onClick={clearAll} className="text-xs text-fuchsia-400 transition-colors hover:text-fuchsia-300">
               Limpiar filtros ✕
             </button>
@@ -528,7 +554,7 @@ export default function CatalogClient({
           <div className="sticky top-24 rounded-2xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl">
             <div className="mb-6 flex items-center justify-between">
               <h3 className="font-display text-lg font-semibold">Filtros</h3>
-              {activeCount > 0 && (
+              {appliedChipCount > 0 && (
                 <button type="button" onClick={clearAll} className="text-xs text-fuchsia-400 hover:text-fuchsia-300">
                   Limpiar
                 </button>
@@ -554,25 +580,25 @@ export default function CatalogClient({
                   onChange={(e) => setSortBy(e.target.value)}
                   className="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-foreground outline-none focus:border-fuchsia-500/50"
                 >
-                  <option value="recommended" className="text-black">
+                  <option value="recommended" className="bg-background text-foreground">
                     Destacados
                   </option>
-                  <option value="popular" className="text-black">
+                  <option value="popular" className="bg-background text-foreground">
                     Más Reservados
                   </option>
-                  <option value="price_asc" className="text-black">
+                  <option value="price_asc" className="bg-background text-foreground">
                     Menor Precio
                   </option>
-                  <option value="price_desc" className="text-black">
+                  <option value="price_desc" className="bg-background text-foreground">
                     Mayor Precio
                   </option>
-                  <option value="name_asc" className="text-black">
+                  <option value="name_asc" className="bg-background text-foreground">
                     Nombre (A-Z)
                   </option>
                 </select>
               </div>
             </div>
-            {(selectedEvents.length > 0 || selectedColors.length > 0) && (
+            {(appliedEvents.length > 0 || appliedColors.length > 0) && (
               <p className="text-xs text-muted-foreground">
                 Los filtros de evento y color se aplican a las prendas ya cargadas. Usá &quot;Cargar más&quot; para traer más del catálogo.
               </p>
@@ -582,7 +608,8 @@ export default function CatalogClient({
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
             {filtered.map((g) => {
               const redirectPath = `${pathname}?${searchParams.toString()}`;
-              const coverUrl = catalogCoverByGarmentId.get(g.id);
+              const coverUrl = primaryPhotoUrl(g.photos_urls);
+              const garmentPickupLoc = resolvePickupLocationForGarment(g, appliedPickupLoc, locations);
               return (
                 <Card
                   key={g.id}
@@ -656,13 +683,20 @@ export default function CatalogClient({
                     <div className="flex gap-2">
                       <button
                         type="button"
-                        onClick={() => addItem({ garment: g, pickupDate, returnDate, pickupLocationId: pickupLoc })}
+                        onClick={() =>
+                          addItem({
+                            garment: g,
+                            pickupDate: appliedPickupDate,
+                            returnDate: appliedReturnDate,
+                            pickupLocationId: garmentPickupLoc,
+                          })
+                        }
                         className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition-all duration-300 hover:bg-white/10 active:scale-95"
                       >
                         Añadir
                       </button>
                       <Link
-                        href={`/catalog/${g.id}?pickupLocationId=${encodeURIComponent(pickupLoc)}&pickupDate=${encodeURIComponent(pickupDate)}&returnDate=${encodeURIComponent(returnDate)}`}
+                        href={`/catalog/${g.id}?pickupLocationId=${encodeURIComponent(garmentPickupLoc)}&pickupDate=${encodeURIComponent(appliedPickupDate)}&returnDate=${encodeURIComponent(appliedReturnDate)}`}
                         className="rounded-2xl bg-gradient-to-r from-fuchsia-500 to-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-glow transition-all duration-300 hover:scale-[1.02] hover:shadow-glow-lg active:scale-95"
                       >
                         Detalles
@@ -695,7 +729,7 @@ export default function CatalogClient({
               </div>
               <p className="font-display text-xl font-medium tracking-tight">No encontramos prendas</p>
               <p className="mt-2 max-w-sm text-sm text-muted-foreground">Probá ajustando los filtros o las fechas.</p>
-              {activeCount > 0 && (
+              {appliedChipCount > 0 && (
                 <button
                   type="button"
                   onClick={clearAll}
