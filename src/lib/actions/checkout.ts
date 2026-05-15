@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { createReservation } from '@/lib/actions/availability';
 import { MercadoPagoConfig, Preference } from 'mercadopago';
 import { redirect } from 'next/navigation';
+import { z } from 'zod';
 
 // Get MP Token from Server Environment variables
 const mpAccessToken = process.env.MP_ACCESS_TOKEN || '';
@@ -13,7 +14,8 @@ export async function processCheckout(formData: FormData) {
   const garmentId = formData.get('garmentId') as string;
   const pickupDate = formData.get('pickupDate') as string;
   const returnDate = formData.get('returnDate') as string;
-  
+  const pickupLocationId = String(formData.get('pickupLocationId') ?? '').trim();
+
   const firstName = formData.get('firstName') as string;
   const lastName = formData.get('lastName') as string;
   const email = formData.get('email') as string;
@@ -21,6 +23,10 @@ export async function processCheckout(formData: FormData) {
 
   if (!garmentId || !pickupDate || !returnDate || !firstName || !lastName || !email) {
     redirect(`/catalog/${garmentId}?error=Faltan+campos`);
+  }
+
+  if (!z.string().uuid().safeParse(pickupLocationId).success) {
+    redirect(`/catalog/${garmentId}?error=Sede+de+retiro+invalida`);
   }
 
   const supabase = createAdminClient();
@@ -32,7 +38,7 @@ export async function processCheckout(formData: FormData) {
       .eq('slug', 'maison-demo')
       .single();
 
-  if (orgError) {
+  if (orgError || !orgData) {
       redirect(`/catalog/${garmentId}?error=Organizacion+no+encontrada`);
   }
   const orgId = orgData.id;
@@ -40,12 +46,16 @@ export async function processCheckout(formData: FormData) {
   // 2. Get Garment to compute price securely on the backend
   const { data: garment, error: garmentError } = await supabase
       .from('garments')
-      .select('name, rental_price, deposit_amount')
+      .select('name, rental_price, deposit_amount, location_id')
       .eq('id', garmentId)
       .single();
 
   if (garmentError || !garment) {
       redirect(`/catalog/${garmentId}?error=Prenda+invalida`);
+  }
+
+  if (garment.location_id && garment.location_id !== pickupLocationId) {
+      redirect(`/catalog/${garmentId}?error=Sede+no+coincide+con+la+prenda`);
   }
 
   const totalAmount = (garment.rental_price || 0) + (garment.deposit_amount || 0);
@@ -89,6 +99,7 @@ export async function processCheckout(formData: FormData) {
       returnDate,
       rentalPrice: garment.rental_price || 0,
       depositAmount: garment.deposit_amount || 0,
+      pickupLocationId,
   });
 
   if (reserveResult.error || !reserveResult.data) {
@@ -217,14 +228,26 @@ export async function processCartCheckout(formData: FormData) {
   const preferenceItems: any[] = [];
   
   for (const item of cartItems) {
+    const pickupLoc =
+      typeof item.pickupLocationId === 'string' ? item.pickupLocationId.trim() : '';
+    if (!z.string().uuid().safeParse(pickupLoc).success) {
+      return { error: 'Sede de retiro inválida en el carrito. Volvé al catálogo y elegí una sede.' };
+    }
+
     const { data: garment, error: garmentError } = await supabase
       .from('garments')
-      .select('name, rental_price, deposit_amount')
+      .select('name, rental_price, deposit_amount, location_id')
       .eq('id', item.garment.id)
       .single();
       
     if (garmentError || !garment) {
       return { error: `La prenda ${item.garment?.name || 'desconocida'} ya no está disponible.` };
+    }
+
+    if (garment.location_id && garment.location_id !== pickupLoc) {
+      return {
+        error: `La sede de retiro no coincide con la ubicación de «${garment.name}». Actualizá el carrito desde el catálogo.`,
+      };
     }
 
     const itemTotal = (garment.rental_price || 0) + (garment.deposit_amount || 0);
@@ -236,6 +259,7 @@ export async function processCartCheckout(formData: FormData) {
       returnDate: item.returnDate,
       rentalPrice: garment.rental_price || 0,
       depositAmount: garment.deposit_amount || 0,
+      pickupLocationId: pickupLoc,
     });
 
     if (reserveResult.error || !reserveResult.data) {

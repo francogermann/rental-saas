@@ -90,7 +90,7 @@ export async function searchAvailableGarments(
         .eq('slug', 'maison-demo')
         .single();
 
-    if (orgError) {
+    if (orgError || !orgData) {
         return { data: null, error: 'Tienda inactiva o no encontrada.' };
     }
 
@@ -209,11 +209,7 @@ export async function createReservation(
         return { data: null, error: 'Prenda no encontrada.' };
     }
 
-    if (!garment.location_id) {
-        return { data: null, error: 'Esta prenda no tiene sede asignada. Contactá al local.' };
-    }
-
-    if (garment.location_id !== pickupLocationId) {
+    if (garment.location_id && garment.location_id !== pickupLocationId) {
         return {
             data: null,
             error: 'La sede de retiro no coincide con la ubicación del vestido. Volvé al catálogo y elegí la sede correcta.',

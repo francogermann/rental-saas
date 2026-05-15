@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/server';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
+import { z } from 'zod';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import ClientDateSelector from './ClientDateSelector';
@@ -12,7 +13,13 @@ type GarmentDetailRow = GarmentRow & {
   locations: { name: string; address_line: string } | null;
 };
 
-export default async function GarmentDetailPage({ params }: { params: { garmentId: string } }) {
+export default async function GarmentDetailPage({
+  params,
+  searchParams,
+}: {
+  params: { garmentId: string };
+  searchParams: Record<string, string | string[] | undefined>;
+}) {
   const supabase = createAdminClient();
 
   const { data, error } = await supabase
@@ -31,6 +38,56 @@ export default async function GarmentDetailPage({ params }: { params: { garmentI
   const garment = data as GarmentDetailRow;
   const loc = garment.locations;
 
+  const pickupDate =
+    typeof searchParams.pickupDate === 'string' ? searchParams.pickupDate : new Date().toISOString().split('T')[0];
+  const returnDate =
+    typeof searchParams.returnDate === 'string'
+      ? searchParams.returnDate
+      : new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0];
+  const rawPickupLoc =
+    typeof searchParams.pickupLocationId === 'string' ? searchParams.pickupLocationId.trim() : '';
+  const garmentLocId = garment.location_id;
+
+  let pickupLocationId: string;
+  let sedeLine: { name: string; address_line: string } | null =
+    loc ? { name: loc.name, address_line: loc.address_line } : null;
+
+  if (garmentLocId) {
+    if (!z.string().uuid().safeParse(rawPickupLoc).success || rawPickupLoc !== garmentLocId) {
+      redirect(
+        `/catalog/${params.garmentId}?pickupLocationId=${garmentLocId}&pickupDate=${pickupDate}&returnDate=${returnDate}`,
+      );
+    }
+    pickupLocationId = rawPickupLoc;
+  } else {
+    const { data: orgLocs } = await supabase
+      .from('locations')
+      .select('id, name, address_line')
+      .eq('organization_id', garment.organization_id)
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true });
+
+    const locs = orgLocs ?? [];
+    if (locs.length === 0) {
+      return (
+        <div className="min-h-screen flex items-center justify-center p-8 text-center text-muted-foreground">
+          No hay sedes configuradas para esta tienda.
+        </div>
+      );
+    }
+
+    const defaultPid = locs[0].id;
+    const rawOk = z.string().uuid().safeParse(rawPickupLoc).success && locs.some((l) => l.id === rawPickupLoc);
+    if (!rawOk) {
+      redirect(
+        `/catalog/${params.garmentId}?pickupLocationId=${defaultPid}&pickupDate=${pickupDate}&returnDate=${returnDate}`,
+      );
+    }
+    pickupLocationId = rawPickupLoc;
+    const chosen = locs.find((l) => l.id === pickupLocationId);
+    sedeLine = chosen ? { name: chosen.name, address_line: chosen.address_line } : null;
+  }
+
   const cartGarment: GarmentSummary = {
     id: garment.id,
     name: garment.name,
@@ -45,8 +102,8 @@ export default async function GarmentDetailPage({ params }: { params: { garmentI
     hip_cm: garment.hip_cm,
     tags: garment.tags ?? [],
     style_group_id: garment.style_group_id,
-    location_id: garment.location_id,
-    location_name: loc?.name ?? null,
+    location_id: garment.location_id ?? pickupLocationId,
+    location_name: sedeLine?.name ?? loc?.name ?? null,
   };
 
   return (
@@ -97,11 +154,11 @@ export default async function GarmentDetailPage({ params }: { params: { garmentI
               <p className="text-lg text-muted-foreground leading-relaxed">
                 {garment.description || "Vestido exclusivo de Carpe Diem. Elegí tus fechas y reservalo sin agenda previa."}
               </p>
-              {loc?.name && (
+              {sedeLine?.name && (
                 <p className="text-sm text-fuchsia-300/90 mt-3">
-                  <span className="font-medium text-fuchsia-200/90">Sede: </span>
-                  {loc.name}
-                  <span className="text-muted-foreground font-normal"> — {loc.address_line}</span>
+                  <span className="font-medium text-fuchsia-200/90">Sede de retiro: </span>
+                  {sedeLine.name}
+                  <span className="text-muted-foreground font-normal"> — {sedeLine.address_line}</span>
                 </p>
               )}
             </div>
@@ -125,7 +182,7 @@ export default async function GarmentDetailPage({ params }: { params: { garmentI
             {/* Calendar */}
             <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
               <h3 className="font-display text-lg font-semibold mb-6 tracking-tight">Seleccionar Fechas</h3>
-              <ClientDateSelector garment={cartGarment} />
+              <ClientDateSelector garment={cartGarment} pickupLocationId={pickupLocationId} />
             </div>
 
           </div>
