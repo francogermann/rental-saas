@@ -333,8 +333,7 @@ export async function createManualReservation(
     const eventRaw = String(formData.get('event_date') ?? '').trim();
     const parsed = z
         .object({
-            customer_id: z.string().uuid(),
-            garment_id: z.string().uuid(),
+            garment_id: z.string().min(1, 'Elegí una prenda de la lista.').uuid('Elegí una prenda de la lista.'),
             pickup_date: manualReservationDateSchema,
             return_date: manualReservationDateSchema,
             event_date: z.union([manualReservationDateSchema, z.literal('')]),
@@ -343,7 +342,6 @@ export async function createManualReservation(
         })
         .refine((d) => d.pickup_date <= d.return_date, { message: 'La devolución no puede ser anterior al retiro.' })
         .safeParse({
-            customer_id: String(formData.get('customer_id') ?? ''),
             garment_id: String(formData.get('garment_id') ?? ''),
             pickup_date: String(formData.get('pickup_date') ?? ''),
             return_date: String(formData.get('return_date') ?? ''),
@@ -357,7 +355,7 @@ export async function createManualReservation(
         return { error: msg || 'Datos inválidos.' };
     }
 
-    const { customer_id, garment_id, pickup_date, return_date, rental_price, deposit_amount } = parsed.data;
+    const { garment_id, pickup_date, return_date, rental_price, deposit_amount } = parsed.data;
     const event_date =
         parsed.data.event_date && parsed.data.event_date.length >= 10 ? parsed.data.event_date : pickup_date;
 
@@ -373,6 +371,69 @@ export async function createManualReservation(
 
     if (orgErr || !org) {
         return { error: 'Organización no encontrada.' };
+    }
+
+    const customerMode = String(formData.get('customer_mode') ?? 'registered').trim() === 'walk_in' ? 'walk_in' : 'registered';
+    let customer_id: string;
+
+    if (customerMode === 'walk_in') {
+        const fullName = String(formData.get('walk_in_full_name') ?? '').trim();
+        if (fullName.length < 2) {
+            return { error: 'Ingresá el nombre de la clienta (al menos 2 caracteres).' };
+        }
+        const parts = fullName.split(/\s+/).filter(Boolean);
+        const first_name = parts[0] ?? fullName;
+        const last_name = parts.length > 1 ? parts.slice(1).join(' ') : '—';
+
+        const phoneRaw = String(formData.get('walk_in_phone') ?? '').trim();
+        const phone = phoneRaw.length > 0 ? phoneRaw : null;
+
+        const emailRaw = String(formData.get('walk_in_email') ?? '').trim();
+        const emailParsed = z.string().email().safeParse(emailRaw);
+        const email =
+            emailRaw.length > 0 && emailParsed.success
+                ? emailParsed.data
+                : `walkin+${randomUUID()}@walkin.invalid`;
+
+        const { data: inserted, error: insErr } = await supabase
+            .from('customers')
+            .insert({
+                organization_id: org.id,
+                first_name,
+                last_name,
+                email,
+                phone,
+                notes: 'Alta rápida desde reserva manual (mostrador).',
+            })
+            .select('id')
+            .single();
+
+        if (insErr || !inserted) {
+            console.error('createManualReservation walk-in customer:', insErr);
+            if (insErr?.code === '23505') {
+                return {
+                    error:
+                        'Ese email ya está registrado. Usá otro email, buscá la clienta en la lista o dejá el email vacío para generar uno interno.',
+                };
+            }
+            return { error: insErr?.message || 'No se pudo registrar a la clienta.' };
+        }
+        customer_id = inserted.id;
+    } else {
+        const cid = String(formData.get('customer_id') ?? '').trim();
+        if (!z.string().uuid().safeParse(cid).success) {
+            return { error: 'Elegí una clienta de la lista o usá “Alta rápida (mostrador)”.' };
+        }
+        const { data: custOk, error: custErr } = await supabase
+            .from('customers')
+            .select('id')
+            .eq('id', cid)
+            .eq('organization_id', org.id)
+            .maybeSingle();
+        if (custErr || !custOk) {
+            return { error: 'La clienta seleccionada no es válida.' };
+        }
+        customer_id = custOk.id;
     }
 
     const { error: rpcError } = await supabase.rpc('create_reservation_with_block_for_org', {
@@ -392,6 +453,7 @@ export async function createManualReservation(
     }
 
     revalidatePath('/admin/reservations');
+    revalidatePath('/admin/reservations/new');
     revalidatePath('/admin/dashboard');
     redirect('/admin/reservations?view=active&page=1');
 }

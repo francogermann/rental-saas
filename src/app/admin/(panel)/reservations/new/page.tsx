@@ -45,11 +45,11 @@ export default async function AdminNewReservationPage({
 
   let garmentsQuery = supabase
     .from('garments')
-    .select('id, name, sku, rental_price, deposit_amount')
+    .select('id, name, sku, rental_price, deposit_amount, photos_urls')
     .eq('organization_id', org.id)
     .eq('operative_status', 'available')
     .order('name', { ascending: true })
-    .limit(200);
+    .limit(500);
 
   if (garmentQ.length > 0) {
     const pat = `%${escapeIlikePattern(garmentQ)}%`;
@@ -80,6 +80,7 @@ export default async function AdminNewReservationPage({
     sku: g.sku,
     rental_price: g.rental_price ?? 0,
     deposit_amount: g.deposit_amount ?? 0,
+    photos_urls: (g.photos_urls ?? []) as string[],
   }));
 
   return (
@@ -143,7 +144,7 @@ export default async function AdminNewReservationPage({
       />
 
       <p className="text-xs text-muted-foreground">
-        Si no ves a la clienta o la prenda, usá la búsqueda arriba (hasta 200 resultados por lista).
+        Listas cargadas con hasta 500 prendas disponibles y 200 clientas; podés filtrar arriba o buscar en vivo en el formulario.
       </p>
     </div>
   );
