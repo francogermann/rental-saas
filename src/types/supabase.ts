@@ -430,6 +430,19 @@ export type Database = {
         }
         Returns: Json
       }
+      create_reservation_with_block_for_org: {
+        Args: {
+          p_customer_id: string
+          p_deposit_amount: number
+          p_event_date: string
+          p_garment_id: string
+          p_organization_id: string
+          p_pickup_date: string
+          p_rental_price: number
+          p_return_date: string
+        }
+        Returns: Json
+      }
       get_available_garments: {
         Args: {
           p_category?: string

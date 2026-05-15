@@ -22,6 +22,9 @@ export default function AdminPanelLayout({ children }: { children: React.ReactNo
           <a href="/admin/reservations" className="px-4 py-2 rounded-lg hover:bg-white/5 text-sm font-medium transition-colors text-muted-foreground hover:text-foreground">
             Citas y Reservas
           </a>
+          <a href="/admin/reservations/new" className="px-4 py-2 rounded-lg hover:bg-white/5 text-sm font-medium transition-colors text-muted-foreground hover:text-foreground">
+            Nueva reserva manual
+          </a>
         </nav>
 
         <div className="p-4 border-t border-white/5 space-y-2">

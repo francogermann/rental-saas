@@ -316,3 +316,82 @@ export async function anonymizeCustomer(formData: FormData) {
     revalidatePath('/admin/reservations');
     redirect(safeReservationsRedirect(formData));
 }
+
+const manualReservationDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha inválido');
+
+export type ManualReservationFormState = {
+    error?: string;
+};
+
+export async function createManualReservation(
+    _prev: ManualReservationFormState,
+    formData: FormData,
+): Promise<ManualReservationFormState> {
+    await requireAdminSession();
+    const supabase = createAdminClient();
+
+    const eventRaw = String(formData.get('event_date') ?? '').trim();
+    const parsed = z
+        .object({
+            customer_id: z.string().uuid(),
+            garment_id: z.string().uuid(),
+            pickup_date: manualReservationDateSchema,
+            return_date: manualReservationDateSchema,
+            event_date: z.union([manualReservationDateSchema, z.literal('')]),
+            rental_price: z.coerce.number().positive(),
+            deposit_amount: z.coerce.number().min(0),
+        })
+        .refine((d) => d.pickup_date <= d.return_date, { message: 'La devolución no puede ser anterior al retiro.' })
+        .safeParse({
+            customer_id: String(formData.get('customer_id') ?? ''),
+            garment_id: String(formData.get('garment_id') ?? ''),
+            pickup_date: String(formData.get('pickup_date') ?? ''),
+            return_date: String(formData.get('return_date') ?? ''),
+            event_date: eventRaw,
+            rental_price: formData.get('rental_price'),
+            deposit_amount: formData.get('deposit_amount'),
+        });
+
+    if (!parsed.success) {
+        const msg = parsed.error.issues.map((i) => i.message).join(' ');
+        return { error: msg || 'Datos inválidos.' };
+    }
+
+    const { customer_id, garment_id, pickup_date, return_date, rental_price, deposit_amount } = parsed.data;
+    const event_date =
+        parsed.data.event_date && parsed.data.event_date.length >= 10 ? parsed.data.event_date : pickup_date;
+
+    if (deposit_amount > rental_price) {
+        return { error: 'La seña no puede ser mayor que el alquiler.' };
+    }
+
+    const { data: org, error: orgErr } = await supabase
+        .from('organizations')
+        .select('id')
+        .eq('slug', 'maison-demo')
+        .single();
+
+    if (orgErr || !org) {
+        return { error: 'Organización no encontrada.' };
+    }
+
+    const { error: rpcError } = await supabase.rpc('create_reservation_with_block_for_org', {
+        p_organization_id: org.id,
+        p_garment_id: garment_id,
+        p_customer_id: customer_id,
+        p_pickup_date: pickup_date,
+        p_return_date: return_date,
+        p_event_date: event_date,
+        p_rental_price: rental_price,
+        p_deposit_amount: deposit_amount,
+    });
+
+    if (rpcError) {
+        console.error('createManualReservation RPC:', rpcError);
+        return { error: rpcError.message || 'No se pudo crear la reserva.' };
+    }
+
+    revalidatePath('/admin/reservations');
+    revalidatePath('/admin/dashboard');
+    redirect('/admin/reservations?view=active&page=1');
+}

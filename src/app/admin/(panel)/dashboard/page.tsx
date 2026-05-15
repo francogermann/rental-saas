@@ -39,9 +39,12 @@ export default async function AdminDashboardPage() {
           <h1 className="font-admin-display text-4xl font-bold tracking-tight">Tablero General</h1>
           <p className="text-muted-foreground mt-1">Resumen de operaciones de Carpe Diem.</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <a href="/admin/garments" className="bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-lg px-4 py-2 text-sm font-semibold transition-colors">
             Gestionar Prendas
+          </a>
+          <a href="/admin/reservations/new" className="bg-white/5 border border-fuchsia-500/30 hover:bg-fuchsia-500/10 text-fuchsia-200 rounded-lg px-4 py-2 text-sm font-semibold transition-colors">
+            + Reserva manual
           </a>
           <a href="/admin/garments/new" className="bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white rounded-lg px-4 py-2 text-sm font-semibold transition-all shadow-glow">
             + Nueva Prenda
