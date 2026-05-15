@@ -9,11 +9,21 @@ import type { GarmentSummary } from '@/types/domain';
 interface ClientDateSelectorProps {
   garment: GarmentSummary;
   pickupLocationId: string;
+  onBookingDatesChange?: (range: { pickupDate: string; returnDate: string } | null) => void;
 }
 
-export default function ClientDateSelector({ garment, pickupLocationId }: ClientDateSelectorProps) {
+export default function ClientDateSelector({
+  garment,
+  pickupLocationId,
+  onBookingDatesChange,
+}: ClientDateSelectorProps) {
   const { addItem } = useCart();
   const [selectedRange, setSelectedRange] = useState<{ pickupDate: string; returnDate: string } | null>(null);
+
+  const handleRangeSelect = (range: { pickupDate: string; returnDate: string } | null) => {
+    setSelectedRange(range);
+    onBookingDatesChange?.(range);
+  };
 
   const handleReservation = () => {
     if (!selectedRange) return;
@@ -27,10 +37,7 @@ export default function ClientDateSelector({ garment, pickupLocationId }: Client
 
   return (
     <div className="flex flex-col gap-6">
-      <GarmentDateRangePicker
-        garmentId={garment.id}
-        onRangeSelect={setSelectedRange}
-      />
+      <GarmentDateRangePicker garmentId={garment.id} onRangeSelect={handleRangeSelect} />
       
       {selectedRange && (
         <div className="mt-4 pt-6 border-t border-white/10">

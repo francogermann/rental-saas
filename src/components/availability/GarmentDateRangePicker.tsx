@@ -3,7 +3,8 @@
 import { useState, useCallback, useMemo } from 'react';
 import { DayPicker, type DateRange } from 'react-day-picker';
 import { es } from 'date-fns/locale';
-import { startOfDay, parseISO } from 'date-fns';
+import { startOfDay, format } from 'date-fns';
+import { parseLocalYmd } from '@/lib/calendar-date';
 import { useAvailability } from '@/hooks/useAvailability';
 import type { BlockedDateRange } from '@/types/domain';
 import 'react-day-picker/style.css';
@@ -29,8 +30,8 @@ export function GarmentDateRangePicker({
     // Pre-parse blocked ranges once, not on every render
     const parsedBlocks = useMemo(() =>
         blockedRanges.map((b: BlockedDateRange) => ({
-            from: parseISO(b.date_from),
-            to: parseISO(b.date_to),
+            from: parseLocalYmd(b.date_from),
+            to: parseLocalYmd(b.date_to),
         })),
     [blockedRanges]);
 
@@ -78,8 +79,8 @@ export function GarmentDateRangePicker({
             }
 
             onRangeSelect({
-                pickupDate: from.toISOString().split('T')[0],
-                returnDate: to.toISOString().split('T')[0],
+                pickupDate: format(from, 'yyyy-MM-dd'),
+                returnDate: format(to, 'yyyy-MM-dd'),
             });
         },
         [minDays, maxDays, rangeContainsBlockedDay, onRangeSelect],

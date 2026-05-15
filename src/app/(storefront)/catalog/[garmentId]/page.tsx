@@ -3,13 +3,12 @@ import { notFound, redirect } from 'next/navigation';
 import { z } from 'zod';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
-import ClientDateSelector from './ClientDateSelector';
+import { GarmentDetailBookingClient } from '@/components/catalog/GarmentDetailBookingClient';
 import { formatUy } from '@/lib/utils';
 import type { Database } from '@/types/supabase';
 import type { GarmentSummary } from '@/types/domain';
 import { searchAvailableGarments } from '@/lib/actions/availability';
 import { SimilarGarments } from '@/components/catalog/SimilarGarments';
-import { ShoeRecommendationsRail } from '@/components/catalog/ShoeRecommendationsRail';
 import { WaitlistJoin } from '@/components/catalog/WaitlistJoin';
 import { FavoriteHeart } from '@/components/catalog/FavoriteHeart';
 import { dateRangesOverlap } from '@/lib/date-range';
@@ -300,10 +299,12 @@ export default async function GarmentDetailPage({
               </div>
             </div>
 
-            <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-8 shadow-2xl backdrop-blur-xl">
-              <h3 className="mb-6 font-display text-lg font-semibold tracking-tight">Seleccionar Fechas</h3>
-              <ClientDateSelector garment={cartGarment} pickupLocationId={pickupLocationId} />
-            </div>
+            <GarmentDetailBookingClient
+              garment={cartGarment}
+              pickupLocationId={pickupLocationId}
+              initialPickupDate={pickupDate}
+              initialReturnDate={returnDate}
+            />
 
             <WaitlistJoin
               garmentId={garment.id}
@@ -316,8 +317,6 @@ export default async function GarmentDetailPage({
             />
           </div>
         </div>
-
-        <ShoeRecommendationsRail />
 
         <SimilarGarments
           items={similarGarments}

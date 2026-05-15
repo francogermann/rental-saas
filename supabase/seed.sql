@@ -26,6 +26,12 @@ DECLARE
   tag1       text;
   tag2       text;
   tag3       text;
+  cat_ids    uuid[];
+  n_cat      int;
+  v_pick_d   date;
+  v_ret_d    date;
+  v_rp       numeric;
+  v_dep_amt  numeric;
 BEGIN
   SELECT id INTO v_org FROM public.organizations WHERE slug = 'maison-demo' LIMIT 1;
   IF v_org IS NULL THEN
@@ -71,7 +77,7 @@ BEGIN
   DELETE FROM public.customers WHERE organization_id = v_org;
 
   -- Clientas QA (emails determinísticos)
-  FOR i IN 1..24 LOOP
+  FOR i IN 1..180 LOOP
     INSERT INTO public.customers (organization_id, first_name, last_name, email, phone)
     VALUES (
       v_org,
@@ -332,6 +338,103 @@ BEGIN
       'returned'
     );
   END LOOP;
+
+  -- Volumen histórico sobre catálogo QA-CAT (devueltas + bloques liberados)
+  SELECT coalesce(array_agg(id ORDER BY sku), ARRAY[]::uuid[]) INTO cat_ids
+  FROM public.garments
+  WHERE organization_id = v_org AND sku LIKE 'QA-CAT-%';
+
+  n_cat := coalesce(array_length(cat_ids, 1), 0);
+
+  IF n_cat > 0 THEN
+    FOR gs IN 1..520 LOOP
+      v_gid := cat_ids[1 + ((gs - 1) % n_cat)];
+
+      SELECT rental_price, deposit_amount, coalesce(location_id, v_loc_mvd)
+      INTO v_rp, v_dep_amt, loc_id
+      FROM public.garments
+      WHERE id = v_gid;
+
+      SELECT id INTO v_cid FROM public.customers
+      WHERE organization_id = v_org
+        AND email = 'qa-' || lpad(((gs * 13) % 180 + 1)::text, 3, '0') || '@maison-demo.invalid';
+
+      v_pick_d := (CURRENT_DATE - (30 + ((gs * 31) % 371)))::date;
+      v_ret_d := (v_pick_d + (2 + (gs % 6)))::date;
+
+      INSERT INTO public.reservations (
+        organization_id, customer_id, garment_id, event_date, pickup_date, return_date, status,
+        rental_price, deposit_amount, discount_amount, total_amount,
+        pickup_location_id, mp_preference_id, mp_payment_status, actual_return_date
+      ) VALUES (
+        v_org, v_cid, v_gid,
+        v_pick_d + 1,
+        v_pick_d,
+        v_ret_d,
+        'returned',
+        v_rp, v_dep_amt, 0,
+        (v_rp + v_dep_amt)::numeric(10, 2),
+        loc_id,
+        'seed-bulk-' || gs::text,
+        'approved',
+        v_ret_d
+      ) RETURNING id INTO v_rid;
+
+      INSERT INTO public.garment_blocks (
+        organization_id, garment_id, date_from, date_to,
+        block_type, source_id, source_type, released_at, release_reason
+      ) VALUES (
+        v_org, v_gid, v_pick_d, v_ret_d,
+        'reservation', v_rid, 'reservation',
+        (v_ret_d + interval '1 day')::timestamptz,
+        'returned'
+      );
+    END LOOP;
+
+    -- Futuras canceladas (bloque liberado) para variedad en listados admin
+    FOR gs IN 1..25 LOOP
+      v_gid := cat_ids[1 + ((gs * 11) % n_cat)];
+
+      SELECT rental_price, deposit_amount, coalesce(location_id, v_loc_mvd)
+      INTO v_rp, v_dep_amt, loc_id
+      FROM public.garments
+      WHERE id = v_gid;
+
+      SELECT id INTO v_cid FROM public.customers
+      WHERE organization_id = v_org
+        AND email = 'qa-' || lpad(((gs * 7) % 180 + 1)::text, 3, '0') || '@maison-demo.invalid';
+
+      v_pick_d := (CURRENT_DATE + 40 + ((gs * 5) % 120))::date;
+      v_ret_d := (v_pick_d + (3 + (gs % 5)))::date;
+
+      INSERT INTO public.reservations (
+        organization_id, customer_id, garment_id, event_date, pickup_date, return_date, status,
+        rental_price, deposit_amount, discount_amount, total_amount,
+        pickup_location_id, mp_preference_id, mp_payment_status
+      ) VALUES (
+        v_org, v_cid, v_gid,
+        v_pick_d + 1,
+        v_pick_d,
+        v_ret_d,
+        'cancelled',
+        v_rp, v_dep_amt, 0,
+        (v_rp + v_dep_amt)::numeric(10, 2),
+        loc_id,
+        'seed-fut-can-' || gs::text,
+        NULL
+      ) RETURNING id INTO v_rid;
+
+      INSERT INTO public.garment_blocks (
+        organization_id, garment_id, date_from, date_to,
+        block_type, source_id, source_type, released_at, release_reason
+      ) VALUES (
+        v_org, v_gid, v_pick_d, v_ret_d,
+        'reservation', v_rid, 'reservation',
+        now(),
+        'cancelled'
+      );
+    END LOOP;
+  END IF;
 
   -- Cancelada (bloque liberado)
   SELECT id INTO v_gid FROM public.garments WHERE organization_id = v_org AND sku = 'QA-CAT-010';

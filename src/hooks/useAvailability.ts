@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback, useTransition } from 'react';
+import { startOfDay } from 'date-fns';
 import { getBlockedDatesForGarment } from '@/lib/actions/availability';
+import { parseLocalYmd } from '@/lib/calendar-date';
 import type { BlockedDateRange } from '@/types/domain';
 
 interface UseAvailabilityOptions {
@@ -50,10 +52,12 @@ export function useAvailability({
     }, [load]);
 
     const hasConflict = useCallback((pickupDate: Date, returnDate: Date): boolean => {
+        const p = startOfDay(pickupDate);
+        const r = startOfDay(returnDate);
         return blockedRanges.some((block) => {
-            const blockFrom = new Date(block.date_from);
-            const blockTo = new Date(block.date_to);
-            return pickupDate <= blockTo && returnDate >= blockFrom;
+            const blockFrom = parseLocalYmd(block.date_from);
+            const blockTo = parseLocalYmd(block.date_to);
+            return p <= blockTo && r >= blockFrom;
         });
     }, [blockedRanges]);
 
