@@ -25,6 +25,7 @@ const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha inv
 const AvailabilitySearchSchema = z.object({
     pickupDate: dateSchema,
     returnDate: dateSchema,
+    pickupLocationId: z.string().uuid('Elegí una sede de retiro válida.'),
     sizeLabel: z.string().min(1).max(10).optional(),
     chestCm: z.number().int().min(60).max(160).optional(),
     waistCm: z.number().int().min(40).max(140).optional(),
@@ -54,6 +55,7 @@ const CreateReservationSchema = z.object({
     eventDate: dateSchema.optional(),
     rentalPrice: z.number().positive(),
     depositAmount: z.number().min(0),
+    pickupLocationId: z.string().uuid(),
 }).refine(
     (data) => data.pickupDate <= data.returnDate,
     { message: 'Rango de fechas inválido', path: ['returnDate'] },
@@ -77,7 +79,7 @@ export async function searchAvailableGarments(
         };
     }
 
-    const { pickupDate, returnDate, sizeLabel, chestCm, waistCm, category, maxPrice, limit, offset } = parsed.data;
+    const { pickupDate, returnDate, pickupLocationId, sizeLabel, chestCm, waistCm, category, maxPrice, limit, offset } = parsed.data;
 
     const supabase = createServerClient();
     const adminSupabase = createAdminClient();
@@ -92,6 +94,17 @@ export async function searchAvailableGarments(
         return { data: null, error: 'Tienda inactiva o no encontrada.' };
     }
 
+    const { data: locOk } = await adminSupabase
+        .from('locations')
+        .select('id')
+        .eq('id', pickupLocationId)
+        .eq('organization_id', orgData.id)
+        .maybeSingle();
+
+    if (!locOk) {
+        return { data: null, error: 'La sede de retiro no es válida para esta tienda.' };
+    }
+
     const { data, error } = await supabase.rpc('get_available_garments', {
         p_pickup_date: pickupDate,
         p_return_date: returnDate,
@@ -103,6 +116,7 @@ export async function searchAvailableGarments(
         p_limit: limit,
         p_offset: offset,
         p_organization_id: orgData.id,
+        p_pickup_location_id: pickupLocationId,
     });
 
     if (error) {
@@ -135,11 +149,23 @@ export async function getBlockedDatesForGarment(
     }
 
     const supabase = createServerClient();
+    const adminSupabase = createAdminClient();
+
+    const { data: orgData, error: orgError } = await adminSupabase
+        .from('organizations')
+        .select('id')
+        .eq('slug', 'maison-demo')
+        .single();
+
+    if (orgError || !orgData) {
+        return { data: null, error: 'Tienda inactiva o no encontrada.' };
+    }
 
     const { data, error } = await supabase.rpc('get_blocked_dates_for_garment', {
         p_garment_id: parsed.data.garmentId,
         p_from_date: parsed.data.fromDate ?? undefined,
         p_until_date: parsed.data.untilDate ?? undefined,
+        p_organization_id: orgData.id,
     });
 
     if (error) {
@@ -168,18 +194,56 @@ export async function createReservation(
         };
     }
 
-    const { garmentId, customerId, pickupDate, returnDate, eventDate, rentalPrice, depositAmount } = parsed.data;
+    const { garmentId, customerId, pickupDate, returnDate, eventDate, rentalPrice, depositAmount, pickupLocationId } =
+        parsed.data;
 
-    const supabase = createServerClient();
+    const admin = createAdminClient();
 
-    const { data, error } = await supabase.rpc('create_reservation_with_block', {
+    const { data: garment, error: gErr } = await admin
+        .from('garments')
+        .select('organization_id, location_id')
+        .eq('id', garmentId)
+        .single();
+
+    if (gErr || !garment) {
+        return { data: null, error: 'Prenda no encontrada.' };
+    }
+
+    if (!garment.location_id) {
+        return { data: null, error: 'Esta prenda no tiene sede asignada. Contactá al local.' };
+    }
+
+    if (garment.location_id !== pickupLocationId) {
+        return {
+            data: null,
+            error: 'La sede de retiro no coincide con la ubicación del vestido. Volvé al catálogo y elegí la sede correcta.',
+            code: 'PICKUP_MISMATCH',
+        };
+    }
+
+    const { data: locOk } = await admin
+        .from('locations')
+        .select('id')
+        .eq('id', pickupLocationId)
+        .eq('organization_id', garment.organization_id)
+        .maybeSingle();
+
+    if (!locOk) {
+        return { data: null, error: 'Sede de retiro inválida.' };
+    }
+
+    const { data, error } = await admin.rpc('create_reservation_with_block_for_org', {
+        p_organization_id: garment.organization_id,
         p_garment_id: garmentId,
         p_customer_id: customerId,
         p_pickup_date: pickupDate,
         p_return_date: returnDate,
-        p_event_date: eventDate as string,
+        p_event_date: (eventDate ?? pickupDate) as string,
         p_rental_price: rentalPrice,
         p_deposit_amount: depositAmount,
+        p_pickup_location_id: pickupLocationId,
+        p_notes: undefined,
+        p_status: 'pending',
     });
 
     if (error) {

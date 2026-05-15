@@ -330,6 +330,7 @@ export type Database = {
           mp_preference_id: string | null
           notes: string | null
           organization_id: string
+          pickup_location_id: string | null
           pickup_date: string
           rental_price: number
           return_date: string
@@ -355,6 +356,7 @@ export type Database = {
           mp_preference_id?: string | null
           notes?: string | null
           organization_id: string
+          pickup_location_id?: string | null
           pickup_date: string
           rental_price: number
           return_date: string
@@ -380,6 +382,7 @@ export type Database = {
           mp_preference_id?: string | null
           notes?: string | null
           organization_id?: string
+          pickup_location_id?: string | null
           pickup_date?: string
           rental_price?: number
           return_date?: string
@@ -410,6 +413,13 @@ export type Database = {
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "reservations_pickup_location_id_fkey"
+            columns: ["pickup_location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
@@ -425,6 +435,7 @@ export type Database = {
           p_event_date: string
           p_garment_id: string
           p_pickup_date: string
+          p_pickup_location_id?: string
           p_rental_price: number
           p_return_date: string
         }
@@ -436,10 +447,13 @@ export type Database = {
           p_deposit_amount: number
           p_event_date: string
           p_garment_id: string
+          p_notes?: string
           p_organization_id: string
           p_pickup_date: string
+          p_pickup_location_id?: string
           p_rental_price: number
           p_return_date: string
+          p_status?: string
         }
         Returns: Json
       }
@@ -452,6 +466,7 @@ export type Database = {
           p_offset?: number
           p_organization_id?: string
           p_pickup_date: string
+          p_pickup_location_id?: string
           p_return_date: string
           p_size_label?: string
           p_waist_cm?: number
@@ -478,6 +493,7 @@ export type Database = {
         Args: {
           p_from_date?: string
           p_garment_id: string
+          p_organization_id?: string
           p_until_date?: string
         }
         Returns: {
