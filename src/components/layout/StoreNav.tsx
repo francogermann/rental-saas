@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 import { CartNavButton } from '@/components/cart/CartNavButton';
+import { SITE_LINKS } from '@/lib/site-links';
 
 type StoreNavProps = {
   accountLink: React.ReactNode;
@@ -30,7 +31,7 @@ export function StoreNav({ accountLink }: StoreNavProps) {
               Colección
             </a>
             <a
-              href="https://www.instagram.com/carpediemalquilerdevestidos/"
+              href={SITE_LINKS.instagram}
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm font-medium text-muted-foreground hover:text-fuchsia-400 transition-colors"
@@ -83,7 +84,7 @@ export function StoreNav({ accountLink }: StoreNavProps) {
                 Colección
               </Link>
               <a
-                href="https://www.instagram.com/carpediemalquilerdevestidos/"
+                href={SITE_LINKS.instagram}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={closeMenu}

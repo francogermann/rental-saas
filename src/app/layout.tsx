@@ -6,6 +6,7 @@ import { CartProvider } from "@/components/cart/CartContext";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { StoreNav } from "@/components/layout/StoreNav";
 import { StoreNavAccount } from "@/components/layout/StoreNavAccount";
+import { StoreFooter } from "@/components/layout/StoreFooter";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -45,6 +46,7 @@ export default function RootLayout({
           <main className="pt-16">
             {children}
           </main>
+          <StoreFooter />
           <CartDrawer />
         </CartProvider>
       </body>

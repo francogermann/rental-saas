@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { SITE_LINKS } from '@/lib/site-links';
 
 export default function HomePage() {
   return (
@@ -150,7 +151,7 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════
           WHY CHOOSE US
       ═══════════════════════════════════════════════════════ */}
-      <section className="py-16 sm:py-24 px-4 sm:px-6 relative">
+      <section id="sobre-nosotros" className="relative scroll-mt-20 px-4 py-16 sm:px-6 sm:py-24">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_70%,hsl(285_100%_68%/.06),transparent_50%)]" />
         <div className="container mx-auto max-w-7xl relative z-10">
           <div className="text-center mb-16">
@@ -238,7 +239,7 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════
           LOCATIONS
       ═══════════════════════════════════════════════════════ */}
-      <section className="py-16 sm:py-24 px-4 sm:px-6">
+      <section id="contacto" className="scroll-mt-20 px-4 py-16 sm:px-6 sm:py-24">
         <div className="container mx-auto max-w-7xl">
           <div className="text-center mb-16">
             <p className="text-fuchsia-400 font-medium uppercase tracking-widest text-sm mb-3">Visitanos</p>
@@ -329,7 +330,7 @@ export default function HomePage() {
               Explorá el Catálogo →
             </Link>
             <a
-              href="https://wa.me/59897014922"
+              href={SITE_LINKS.whatsapp}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center h-14 px-10 bg-white/5 hover:bg-white/10 border border-white/10 backdrop-blur-xl text-white font-semibold rounded-2xl transition-all duration-300 text-lg"
@@ -341,28 +342,6 @@ export default function HomePage() {
       </section>
 
 
-      {/* ═══════════════════════════════════════════════════════
-          FOOTER
-      ═══════════════════════════════════════════════════════ */}
-      <footer className="py-12 px-6 border-t border-white/10">
-        <div className="container mx-auto max-w-7xl flex flex-col md:flex-row justify-between items-center gap-6">
-          <div>
-            <p className="font-display text-xl font-bold italic">
-              CarpeDiem.
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">Más que un alquiler, somos parte de tu historia.</p>
-          </div>
-          <div className="flex items-center gap-6 text-sm text-muted-foreground">
-            <a href="https://www.instagram.com/carpediemalquilerdevestidos/" target="_blank" rel="noopener noreferrer" className="hover:text-fuchsia-400 transition-colors">
-              Instagram
-            </a>
-            <a href="https://wa.me/59897014922" target="_blank" rel="noopener noreferrer" className="hover:text-fuchsia-400 transition-colors">
-              WhatsApp
-            </a>
-            <span>📞 097 014 922</span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
