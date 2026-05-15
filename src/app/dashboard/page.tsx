@@ -2,6 +2,11 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase/server';
 import { signOutAction } from '@/lib/actions/auth';
+import { CompleteProfileBanner } from './CompleteProfileBanner';
+
+function metaString(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
 
 export default async function DashboardPage() {
   const supabase = createServerClient();
@@ -10,10 +15,37 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect('/auth/login');
 
+  const { data: customer } = await supabase
+    .from('customers')
+    .select('first_name, last_name')
+    .eq('auth_user_id', user.id)
+    .maybeSingle();
+
+  const meta = user.user_metadata ?? {};
+  const defaultFirstName = metaString(meta.first_name);
+  const defaultLastName = metaString(meta.last_name);
+  const defaultPhone = metaString(meta.phone);
+
+  const displayName = customer
+    ? `${customer.first_name} ${customer.last_name}`.trim()
+    : defaultFirstName && defaultLastName
+      ? `${defaultFirstName} ${defaultLastName}`.trim()
+      : null;
+
   return (
     <div className="container mx-auto max-w-3xl px-4 sm:px-6 py-16 sm:py-24">
-      <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight mb-2">Hola</h1>
+      <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight mb-2">
+        {displayName ? `Hola, ${displayName.split(' ')[0]}` : 'Hola'}
+      </h1>
       <p className="text-muted-foreground mb-10">{user.email}</p>
+
+      {!customer && (
+        <CompleteProfileBanner
+          defaultFirstName={defaultFirstName}
+          defaultLastName={defaultLastName}
+          defaultPhone={defaultPhone}
+        />
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Link

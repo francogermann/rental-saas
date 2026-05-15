@@ -19,11 +19,19 @@ export async function StoreNavAccount() {
   }
 
   return (
-    <Link
-      href="/auth/login"
-      className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-    >
-      Ingresar
-    </Link>
+    <span className="flex items-center gap-3 sm:gap-4">
+      <Link
+        href="/auth/signup"
+        className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+      >
+        Registrate
+      </Link>
+      <Link
+        href="/auth/login"
+        className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+      >
+        Ingresar
+      </Link>
+    </span>
   );
 }

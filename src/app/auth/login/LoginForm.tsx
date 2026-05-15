@@ -3,16 +3,13 @@
 import { useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
+import { sanitizeAuthRedirect } from '@/lib/auth-redirect';
 import type { Database } from '@/types/supabase';
 
 export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectParam = searchParams.get('redirect');
-  const redirectTo =
-    redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//') && !redirectParam.startsWith('/auth')
-      ? redirectParam
-      : '/dashboard';
+  const redirectTo = sanitizeAuthRedirect(searchParams.get('redirect'));
 
   const supabase = useMemo(
     () =>

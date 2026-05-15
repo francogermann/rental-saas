@@ -1,8 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use server';
 
-import { createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient, createServerClient } from '@/lib/supabase/server';
 import { createReservation } from '@/lib/actions/availability';
+import { findOrCreateCheckoutCustomer } from '@/lib/checkout-customer';
+import { getStorefrontOrgId } from '@/lib/storefront-org';
 import { MercadoPagoConfig, Preference } from 'mercadopago';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
@@ -30,18 +32,13 @@ export async function processCheckout(formData: FormData) {
   }
 
   const supabase = createAdminClient();
+  const authSupabase = createServerClient();
 
-  // 1. Get Organization
-  const { data: orgData, error: orgError } = await supabase
-      .from('organizations')
-      .select('id')
-      .eq('slug', 'maison-demo')
-      .single();
-
-  if (orgError || !orgData) {
+  const orgResult = await getStorefrontOrgId(supabase);
+  if ('error' in orgResult) {
       redirect(`/catalog/${garmentId}?error=Organizacion+no+encontrada`);
   }
-  const orgId = orgData.id;
+  const orgId = orgResult.orgId;
 
   // 2. Get Garment to compute price securely on the backend
   const { data: garment, error: garmentError } = await supabase
@@ -61,37 +58,17 @@ export async function processCheckout(formData: FormData) {
 
   const totalAmount = (garment.rental_price || 0) + (garment.deposit_amount || 0);
 
-  // 3. Find or Create Customer
-  let customerId: string;
-  const { data: existCustomer } = await supabase
-      .from('customers')
-      .select('id')
-      .eq('email', email)
-      .eq('organization_id', orgId)
-      .is('deleted_at', null)
-      .single();
-
-  if (existCustomer) {
-      customerId = existCustomer.id;
-  } else {
-      const { data: newCustomer, error: createError } = await supabase
-          .from('customers')
-          .insert({
-              organization_id: orgId,
-              first_name: firstName,
-              last_name: lastName,
-              email: email,
-              phone: phone || null
-          })
-          .select('id')
-          .single();
-
-      if (createError) {
-          console.error("Customer error:", createError);
-          redirect(`/catalog/${garmentId}?error=Error+creando+cliente`);
-      }
-      customerId = newCustomer.id;
+  const customerResult = await findOrCreateCheckoutCustomer(supabase, authSupabase, {
+      orgId,
+      firstName,
+      lastName,
+      email,
+      phone,
+  });
+  if ('error' in customerResult) {
+      redirect(`/catalog/${garmentId}?error=Error+creando+cliente`);
   }
+  const customerId = customerResult.customerId;
 
   // 4. Create Reservation Block
   const reserveResult = await createReservation({
@@ -181,50 +158,25 @@ export async function processCartCheckout(formData: FormData) {
   }
 
   const supabase = createAdminClient();
+  const authSupabase = createServerClient();
 
-  // 1. Get Organization
-  const { data: orgData, error: orgError } = await supabase
-      .from('organizations')
-      .select('id')
-      .eq('slug', 'maison-demo')
-      .single();
-
-  if (orgError || !orgData) {
+  const orgResult = await getStorefrontOrgId(supabase);
+  if ('error' in orgResult) {
       return { error: 'Organización no encontrada' };
   }
-  const orgId = orgData.id;
+  const orgId = orgResult.orgId;
 
-  // 2. Find or Create Customer
-  let customerId: string;
-  const { data: existCustomer } = await supabase
-      .from('customers')
-      .select('id')
-      .eq('email', email)
-      .eq('organization_id', orgId)
-      .is('deleted_at', null)
-      .single();
-
-  if (existCustomer) {
-      customerId = existCustomer.id;
-  } else {
-      const { data: newCustomer, error: createError } = await supabase
-          .from('customers')
-          .insert({
-              organization_id: orgId,
-              first_name: firstName,
-              last_name: lastName,
-              email: email,
-              phone: phone || null
-          })
-          .select('id')
-          .single();
-
-      if (createError || !newCustomer) {
-          console.error("Customer error:", createError);
-          return { error: 'Error agregando el cliente' };
-      }
-      customerId = newCustomer.id;
+  const customerResult = await findOrCreateCheckoutCustomer(supabase, authSupabase, {
+      orgId,
+      firstName,
+      lastName,
+      email,
+      phone,
+  });
+  if ('error' in customerResult) {
+      return { error: customerResult.error };
   }
+  const customerId = customerResult.customerId;
 
   // 3. Create Reservations per garment
   const reservationIds: string[] = [];
